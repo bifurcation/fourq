@@ -451,20 +451,26 @@ def tau(P):
             0x000000000000000C0000000000000012)
 
     (Px, Py, Pz, Pta, Ptb) = P
-    t0 = GFp2.sqr(Px)
-    t1 = GFp2.sqr(Py)
-    Px = GFp2.mul(Px, Py)
-    Py = GFp2.sqr(Pz)
-    Pz = GFp2.add(t0, t1)
-    Py = GFp2.add(Py, Py)
-    t0 = GFp2.sub(t0, t1)
-    Py = GFp2.neg(Py)
-    Px = GFp2.mul(Px, t0)
-    Py = GFp2.sub(Py, t0)
-    Px = GFp2.mul(Px, ctau1)
-    Py = GFp2.mul(Py, Pz)
-    Pz = GFp2.mul(Pz, t0)
-    return (Px, Py, Pz, Pta, Ptb)
+
+    alpha = GFp2.sqr(Px)
+    beta  = GFp2.sqr(Py)
+    gamma = GFp2.sqr(Pz)
+    chi   = GFp2.mul(Px, Py)
+
+    sigma = GFp2.add(alpha, beta)
+    delta = GFp2.sub(alpha, beta)
+    tau = GFp2.neg(GFp2.add(gamma, gamma))
+
+    xi = GFp2.mul(chi, delta)
+    zeta = GFp2.sub(tau, delta)
+
+    return (
+        GFp2.mul(xi, ctau1),
+        GFp2.mul(zeta, sigma),
+        GFp2.mul(sigma, delta),
+        Pta,
+        Ptb
+    )
 
 
 def tau_dual(P):
@@ -472,19 +478,26 @@ def tau_dual(P):
                  0x7FFFFFFFFFFFFFF40000000000000011)
 
     (Px, Py, Pz, Pta, Ptb) = P
-    t0  = GFp2.sqr(Px)
-    Pta = GFp2.sqr(Pz)
-    t1  = GFp2.sqr(Py)
-    Pz  = GFp2.add(Pta, Pta)
-    Pta = GFp2.sub(t1, t0)
-    t0  = GFp2.add(t0, t1)
-    Px  = GFp2.mul(Px, Py)
-    Pz  = GFp2.sub(Pz, Pta)
-    Ptb = GFp2.mul(Px, ctaudual1)
-    Py  = GFp2.mul(Pz, Pta)
-    Px  = GFp2.mul(Ptb, t0)
-    Pz  = GFp2.mul(Pz, t0)
-    return (Px, Py, Pz, Pta, Ptb)
+
+    alpha = GFp2.sqr(Px)
+    beta  = GFp2.sqr(Py)
+    gamma = GFp2.sqr(Pz)
+    chi   = GFp2.mul(Px, Py)
+
+    delta = GFp2.sub(beta, alpha)
+    sigma = GFp2.add(alpha, beta)
+    tau   = GFp2.add(gamma, gamma)
+
+    zeta  = GFp2.sub(tau, delta)
+    xi = GFp2.mul(chi, ctaudual1)
+
+    return (
+        GFp2.mul(xi, sigma),
+        GFp2.mul(zeta, delta),
+        GFp2.mul(zeta, sigma),
+        delta,
+        xi
+    )
 
 
 def delphidel(P):
