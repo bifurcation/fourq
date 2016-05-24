@@ -56,45 +56,45 @@ def fpsqr(a):
     return (a * a) % p
 
 def fpinv(a):
-    t2 = fpsqr(a)
-    t2 = fpmul(a, t2)
-    t3 = fpsqr(t2)
-    t3 = fpsqr(t3)
-    t3 = fpmul(t2, t3)
-    t4 = fpsqr(t3)
-    t4 = fpsqr(t4)
-    t4 = fpsqr(t4)
-    t4 = fpsqr(t4)
-    t4 = fpmul(t3, t4)
-    t5 = fpsqr(t4)
-    for i in range(7):
+    t2 = fpsqr(a)           # 2
+    t2 = fpmul(a, t2)       # 3
+    t3 = fpsqr(t2)          # 6
+    t3 = fpsqr(t3)          # 12
+    t3 = fpmul(t2, t3)      # 15
+    t4 = fpsqr(t3)          # 30
+    t4 = fpsqr(t4)          # 60
+    t4 = fpsqr(t4)          # 120
+    t4 = fpsqr(t4)          # 240
+    t4 = fpmul(t3, t4)      # 2^8 - 2^0
+    t5 = fpsqr(t4)          # 2^9 - 2^1
+    for i in range(7):      # 2^16 - 2^8
         t5 = fpsqr(t5)
-    t5 = fpmul(t4, t5)
-    t2 = fpsqr(t5)
-    for i in range(15):
+    t5 = fpmul(t4, t5)      # 2^16 - 2^0
+    t2 = fpsqr(t5)          # 2^17 - 2^1
+    for i in range(15):     # 2^32 - 2^16
         t2 = fpsqr(t2)
-    t2 = fpmul(t5, t2)
-    t1 = fpsqr(t2)
-    for i in range(31):
+    t2 = fpmul(t5, t2)      # 2^32 - 2^0
+    t1 = fpsqr(t2)          # 2^33 - 2^1
+    for i in range(31):     # 2^64 - 2^32
         t1 = fpsqr(t1)
-    t1 = fpmul(t1, t2)
-    for i in  range(32):
+    t1 = fpmul(t1, t2)      # 2^64 - 2^0
+    for i in  range(32):    # 2^96 - 2^32
         t1 = fpsqr(t1)
-    t1 = fpmul(t1, t2)
-    for i in  range(16):
+    t1 = fpmul(t1, t2)      # 2^96 - 2^0
+    for i in  range(16):    # 2^112 - 2^16
         t1 = fpsqr(t1)
-    t1 = fpmul(t1, t5)
-    for i in  range(8):
+    t1 = fpmul(t1, t5)      # 2^112 - 2^0
+    for i in  range(8):     # 2^120 - 2^8
         t1 = fpsqr(t1)
-    t1 = fpmul(t1, t4)
-    for i in  range(4):
+    t1 = fpmul(t1, t4)      # 2^120 - 2^0
+    for i in  range(4):     # 2^124 - 2^4
         t1 = fpsqr(t1)
-    t1 = fpmul(t1, t3)
-    t1 = fpsqr(t1)
-    t1 = fpmul(t1, a)
-    t1 = fpsqr(t1)
-    t1 = fpsqr(t1)
-    return fpmul(t1, a)
+    t1 = fpmul(t1, t3)      # 2^124 - 2^0
+    t1 = fpsqr(t1)          # 2^125 - 2^1
+    t1 = fpmul(t1, a)       # 2^125 - 2^0
+    t1 = fpsqr(t1)          # 2^126 - 2^1
+    t1 = fpsqr(t1)          # 2^127 - 2^2
+    return fpmul(t1, a)     # 2^127 - 3
 
 def fpneg(a):
     return (p - a) % p
@@ -134,7 +134,7 @@ def fp2inv(a):
     invmag = fpinv(fpadd(fpsqr(a[0]), fpsqr(a[1])))
     return fp2mul((invmag, 0), fp2conj(a))
 
-# Constant time 
+# Constant time
 # switch (c) {
 #   case CTRUE:  return x;
 #   case CFALSE: return y;
@@ -196,7 +196,7 @@ def fp2_test():
     test("swap", swap, x23)
     test("noswap", noswap, x57)
 
-fp2_test()
+#fp2_test()
 
 ########## Point Representations ##########
 
@@ -291,7 +291,7 @@ def reps_test():
     test("norm1", normalize(r1), (xz, yz, one, taz, tbz))
     test("norm4", normalize(r4), (xz, yz, one))
 
-reps_test()
+#reps_test()
 
 ########## Curve Arithmetic ##########
 
@@ -403,7 +403,7 @@ def core_test():
                    (0x3EF69A49CB7E02375E06003D73C43EB1, 0x293EB1E26DD23B4E4E752648AC2EF0AB)))
     testpt("addition", A, thouP)
 
-core_test()
+#core_test()
 
 
 ########## Endomorphism ##########
@@ -506,12 +506,12 @@ def delphidel(P):
     Py = fp2add(t6, t2)
     Px = fp2mul(Px, t1)
     Py = fp2mul(Py, cphi5)
-    Px = fp2conj(Px)        # fpneg(Px[1]) # ?
+    Px = fp2conj(Px)
     Py = fp2mul(Py, Pz)
     Pz = fp2mul(t0, t1)
     Py = fp2mul(Py, t0)
-    Pz = fp2conj(Pz)        # fpneg(Pz[1]) # ?
-    Py = fp2conj(Py)        # fpneg(Py[1]) # ?
+    Pz = fp2conj(Pz)
+    Py = fp2conj(Py)
     return (Px, Py, Pz, Pta, Ptb)
 
 
@@ -700,7 +700,7 @@ def endo_test():
     else:
         print "[FAIL] recode"
 
-endo_test()
+#endo_test()
 
 
 ########## Multiplication ##########
@@ -782,22 +782,24 @@ def mul_test():
 
     # Test multiply (no cofactor clearing, with/without endomorphism)
     # Also use this as a light performance test
+    scalar = [0x3AD457AB55456230, 0x3A8B3C2C6FD86E0C, 0x7E38F7C9CFBB9166, 0x0028FD6CBDA458F0]
+    coeff = range(TEST_LOOPS)
+    for i in range(TEST_LOOPS):
+         scalar[1] = scalar[2]
+         scalar[2] += scalar[0]
+         scalar[2] &= 0xffffffffffffffff
+         coeff[i] = (scalar[0] << (0 * 64)) + (scalar[1] << (1 * 64)) + \
+                    (scalar[2] << (2 * 64)) + (scalar[3] << (3 * 64))
+
     def testmul(label, mul):
-        scalar = [0x3AD457AB55456230, 0x3A8B3C2C6FD86E0C, 0x7E38F7C9CFBB9166, 0x0028FD6CBDA458F0]
         A = setup(G)
         for i in range(TEST_LOOPS):
-            scalar[1] = scalar[2]
-            scalar[2] += scalar[0]
-            scalar[2] &= 0xffffffffffffffff
-    
-            m = (scalar[0] << (0 * 64)) + (scalar[1] << (1 * 64)) + \
-                (scalar[2] << (2 * 64)) + (scalar[3] << (3 * 64))
-            A = mul(m, A)
-    
+            A = mul(coeff[i], A)
+
         mulP = setup(((0x257C122BBFC94A1BDFD2B477BD494BEF, 0x469BF80CB5B11F01769593547237C459),
                       (0x0901B3817C0E936C281C5067996F3344, 0x570B948EACACE2104FE8C429915F1245)))
         testpt(label, A, mulP)
-    
+
     tic = time()
     testmul("mul-noendo", MUL_noendo)
     toc = time()
@@ -810,6 +812,6 @@ def mul_test():
     savings = 1.0 - elapsed * 1.0 / elapsed_noendo
 
     print "endo={:.2f} noendo={:.2f} savings={:2.1f}%".format(elapsed, elapsed_noendo, savings * 100)
-    
+
 
 mul_test()
