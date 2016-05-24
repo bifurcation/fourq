@@ -102,48 +102,88 @@ def fpneg(a):
 def fpcswap(c, x, y):
     return (((x ^ y) & c) ^ y)
 
-def fp2add(a, b):
-    return (fpadd(a[0], b[0]), fpadd(a[1], b[1]))
+###
 
-def fp2sub(a, b):
-    return (fpsub(a[0], b[0]), fpsub(a[1], b[1]))
+# Counters for GF(p^2) operations
 
-def fp2addsub(a, b):
-    return fp2sub(fp2add(a, a), b)
+class GFp2:
+    A = 0
+    S = 0
+    M = 0
+    I = 0
 
-def fp2mul(a, b):
-    a0b0 = fpmul(a[0], b[0])
-    a1b0 = fpmul(a[1], b[0])
-    a0b1 = fpmul(a[0], b[1])
-    a1b1 = fpmul(a[1], b[1])
-    return (fpsub(a0b0, a1b1), fpadd(a0b1, a1b0))
+    @staticmethod
+    def ctr_reset():
+        GFp2.A = 0
+        GFp2.S = 0
+        GFp2.M = 0
+        GFp2.I = 0
 
-def fp2sqr(a):
-    a02   = fpmul(a[0], a[0])
-    a12   = fpmul(a[1], a[1])
-    a0a12 = fpmul(2, fpmul(a[0], a[1]))
-    return (fpsub(a02, a12), a0a12)
+    @staticmethod
+    def ctr():
+        return (GFp2.A, GFp2.S, GFp2.M, GFp2.I)
 
-def fp2neg(a):
-    return (fpneg(a[0]), fpneg(a[1]))
+    @staticmethod
+    def add(a, b):
+        GFp2.A += 1
+        return (fpadd(a[0], b[0]), fpadd(a[1], b[1]))
 
-def fp2conj(a):
-    return (a[0], fpneg(a[1]))
+    @staticmethod
+    def sub(a, b):
+        GFp2.A += 1
+        return (fpsub(a[0], b[0]), fpsub(a[1], b[1]))
 
-def fp2inv(a):
-    invmag = fpinv(fpadd(fpsqr(a[0]), fpsqr(a[1])))
-    return fp2mul((invmag, 0), fp2conj(a))
+    @staticmethod
+    def addsub(a, b):
+        return GFp2.sub(GFp2.add(a, a), b)
 
-# Constant time
-# switch (c) {
-#   case CTRUE:  return x;
-#   case CFALSE: return y;
-# }
-def fp2cswap(c, x, y):
-    return (fpcswap(c, x[0], y[0]), fpcswap(c, x[1], y[1]))
+    @staticmethod
+    def mul(a, b):
+        GFp2.M += 1
+        a0b0 = fpmul(a[0], b[0])
+        a1b0 = fpmul(a[1], b[0])
+        a0b1 = fpmul(a[0], b[1])
+        a1b1 = fpmul(a[1], b[1])
+        return (fpsub(a0b0, a1b1), fpadd(a0b1, a1b0))
 
-def fp2fmt(a):
-    return "{:032x}:{:032x}".format(a[0], a[1])
+    @staticmethod
+    def sqr(a):
+        GFp2.S += 1
+        a02   = fpmul(a[0], a[0])
+        a12   = fpmul(a[1], a[1])
+        a0a12 = fpmul(2, fpmul(a[0], a[1]))
+        return (fpsub(a02, a12), a0a12)
+
+    @staticmethod
+    def neg(a):
+        GFp2.A += 1
+        return (fpneg(a[0]), fpneg(a[1]))
+
+    @staticmethod
+    def conj(a):
+        GFp2.A += 0.5
+        return (a[0], fpneg(a[1]))
+
+    @staticmethod
+    def inv(a):
+        GFp2.I += 1
+        invmag = fpinv(fpadd(fpsqr(a[0]), fpsqr(a[1])))
+        GFp2.M -= 1 # To avoid double-counting
+        GFp2.A -= 1
+        return GFp2.mul((invmag, 0), GFp2.conj(a))
+
+    # Constant time
+    # switch (c) {
+    #   case CTRUE:  return x;
+    #   case CFALSE: return y;
+    # }
+    @staticmethod
+    def cswap(c, x, y):
+        return (fpcswap(c, x[0], y[0]), fpcswap(c, x[1], y[1]))
+
+    @staticmethod
+    def fmt(a):
+        return "{:032x}:{:032x}".format(a[0], a[1])
 
 ###
 
@@ -177,26 +217,26 @@ def fp2_test():
     x23 = (2, 3)
     x57 = (5, 7)
 
-    test("1+i", fp2add(one,i), (1,1))
-    test("1*i", fp2mul(one,i), (0,1))
+    test("1+i", GFp2.add(one,i), (1,1))
+    test("1*i", GFp2.mul(one,i), (0,1))
 
-    test("add",     fp2add(x23, x57), (7, 10))
-    test("sub-pos", fp2sub(x57, x23), (3, 4))
-    test("sub-neg", fp2sub(x23, x57), (p-3, p-4))
-    test("mul",     fp2mul(x23, x57), (p-11, 29))
-    test("sqr",     fp2sqr(x23), (p-5, 12))
+    test("add",     GFp2.add(x23, x57), (7, 10))
+    test("sub-pos", GFp2.sub(x57, x23), (3, 4))
+    test("sub-neg", GFp2.sub(x23, x57), (p-3, p-4))
+    test("mul",     GFp2.mul(x23, x57), (p-11, 29))
+    test("sqr",     GFp2.sqr(x23), (p-5, 12))
 
-    x23c = fp2conj(x23)
-    x23i = fp2inv(x23)
+    x23c = GFp2.conj(x23)
+    x23i = GFp2.inv(x23)
     test("conj", x23c, (2, fpneg(3)))
-    test("inv", fp2mul(x23, x23i), one)
+    test("inv", GFp2.mul(x23, x23i), one)
 
-    swap = fp2cswap(CTRUE, x23, x57)
-    noswap = fp2cswap(CFALSE, x23, x57)
+    swap = GFp2.cswap(CTRUE, x23, x57)
+    noswap = GFp2.cswap(CFALSE, x23, x57)
     test("swap", swap, x23)
     test("noswap", noswap, x57)
 
-#fp2_test()
+#GFp2._test()
 
 ########## Point Representations ##########
 
@@ -215,42 +255,42 @@ def fp2_test():
 
 # R1toR2(X, Y, Z, Ta, Tb) = (X+Y, Y-X, Z+Z, (d*Ta*Tb) + (d*Ta*Tb))
 def R1toR2(P):
-    TaTb = fp2mul(P[3], P[4])
-    dTaTb = fp2mul(d, TaTb)
+    TaTb = GFp2.mul(P[3], P[4])
+    dTaTb = GFp2.mul(d, TaTb)
     return (
-        fp2add(P[0], P[1]),
-        fp2sub(P[1], P[0]),
-        fp2add(P[2], P[2]),
-        fp2add(dTaTb, dTaTb)
+        GFp2.add(P[0], P[1]),
+        GFp2.sub(P[1], P[0]),
+        GFp2.add(P[2], P[2]),
+        GFp2.add(dTaTb, dTaTb)
     )
 
 # R1toR3(X, Y, Z, Ta, Tb) = (X+Y, Y-X, Z, Ta*Tb)
 def R1toR3(P):
     return(
-        fp2add(P[0], P[1]),
-        fp2sub(P[1], P[0]),
+        GFp2.add(P[0], P[1]),
+        GFp2.sub(P[1], P[0]),
         P[2],
-        fp2mul(P[3], P[4])
+        GFp2.mul(P[3], P[4])
     )
 
 # R2toR4(XpY, YmX, Z, T)  = (XpY-YmX, YmX-XmY, Z) // because projective
 def R2toR4(P):
     return (
-        fp2sub(P[0], P[1]),
-        fp2add(P[1], P[0]),
+        GFp2.sub(P[0], P[1]),
+        GFp2.add(P[1], P[0]),
         P[2]
     )
 
 # Take a curve in any representation and clear the projective factor
 def normalize(P):
-    zi = fp2inv(P[2])
-    xz = fp2mul(P[0], zi)
-    yz = fp2mul(P[1], zi)
+    zi = GFp2.inv(P[2])
+    xz = GFp2.mul(P[0], zi)
+    yz = GFp2.mul(P[1], zi)
     if len(P) == 3: # R4
         return (xz, yz, one)
     if len(P) == 5: # R1
-        taz = fp2mul(P[3], zi)
-        tbz = fp2mul(P[4], zi)
+        taz = GFp2.mul(P[3], zi)
+        tbz = GFp2.mul(P[4], zi)
         return (xz, yz, one, taz, tbz)
     raise Exception("Representation unsupported for normalization")
 
@@ -272,7 +312,7 @@ def reps_test():
     ta  = (5, 0)
     tb  = (1, 6)
     t   = (5, 30)
-    td2 = fp2mul((2,0), fp2mul(d, t))
+    td2 = GFp2.mul((2,0), GFp2.mul(d, t))
 
     r1 = (x, y, z, ta, tb)
     r2 = (xy, yx, z2, td2)
@@ -283,11 +323,11 @@ def reps_test():
     test("R1toR3", R1toR3(r1), r3)
     test("R2toR4", R2toR4(r2), r4)
 
-    zi = fp2inv(z)
-    xz = fp2mul(x, zi)
-    yz = fp2mul(y, zi)
-    taz = fp2mul(ta, zi)
-    tbz = fp2mul(tb, zi)
+    zi = GFp2.inv(z)
+    xz = GFp2.mul(x, zi)
+    yz = GFp2.mul(y, zi)
+    taz = GFp2.mul(ta, zi)
+    tbz = GFp2.mul(tb, zi)
     test("norm1", normalize(r1), (xz, yz, one, taz, tbz))
     test("norm4", normalize(r4), (xz, yz, one))
 
@@ -300,24 +340,20 @@ def reps_test():
 #   7M    -S    4A
 def ADD_core(P, Q):
     # Order of things is slightly cleaned up
-    chi  = fp2mul(P[0], Q[0])
-    xi   = fp2mul(P[1], Q[1])
-    tau  = fp2mul(P[2], Q[2])
-    zeta = fp2mul(P[3], Q[3])
+    chi  = GFp2.mul(P[0], Q[0])
+    xi   = GFp2.mul(P[1], Q[1])
+    tau  = GFp2.mul(P[2], Q[2])
+    zeta = GFp2.mul(P[3], Q[3])
 
-    alpha = fp2add(tau, zeta)
-    beta  = fp2sub(tau, zeta)
-    mu    = fp2add(chi, xi)
-    nu    = fp2sub(chi, xi)
-
-    Rx  = fp2mul(nu, beta)
-    Rz  = fp2mul(alpha,  beta)
-    Ry  = fp2mul(mu, alpha)
+    alpha = GFp2.add(tau, zeta)
+    beta  = GFp2.sub(tau, zeta)
+    mu    = GFp2.add(chi, xi)
+    nu    = GFp2.sub(chi, xi)
 
     return (
-        fp2mul(nu, beta),
-        fp2mul(mu, alpha),
-        fp2mul(alpha,  beta),
+        GFp2.mul(nu, beta),
+        GFp2.mul(mu, alpha),
+        GFp2.mul(alpha,  beta),
         mu,
         nu
     )
@@ -332,22 +368,22 @@ def ADD(P, Q):
 #   R4 -> R1
 #   3M    4S    6A
 def DBL(P):
-    alpha = fp2sqr(P[0])        # alpha = X^2
-    beta  = fp2sqr(P[1])        # beta = Y^2
-    zeta  = fp2sqr(P[2])        # zeta = Z^2
+    alpha = GFp2.sqr(P[0])        # alpha = X^2
+    beta  = GFp2.sqr(P[1])        # beta = Y^2
+    zeta  = GFp2.sqr(P[2])        # zeta = Z^2
 
-    sigma = fp2add(P[0], P[1])  # sigma = X + Y
-    tau   = fp2sqr(sigma)       # tau = sigma^2
+    sigma = GFp2.add(P[0], P[1])  # sigma = X + Y
+    tau   = GFp2.sqr(sigma)       # tau = sigma^2
 
-    t1 = fp2add(alpha, beta)    # t1 = alpha + beta
-    t2 = fp2sub(beta, alpha)    # t2 = beta - alpha
-    t3 = fp2sub(tau, t1)        # t3 = tau  - t1
-    t4 = fp2addsub(zeta, t2)    # t4 = zeta + zeta - t2
+    t1 = GFp2.add(alpha, beta)    # t1 = alpha + beta
+    t2 = GFp2.sub(beta, alpha)    # t2 = beta - alpha
+    t3 = GFp2.sub(tau, t1)        # t3 = tau  - t1
+    t4 = GFp2.addsub(zeta, t2)    # t4 = zeta + zeta - t2
 
     return (
-        fp2mul(t3, t4),         # X  = t3 * t4
-        fp2mul(t1, t2),         # Y  = t1 * t2
-        fp2mul(t2, t4),         # Z  = t2 * t4
+        GFp2.mul(t3, t4),         # X  = t3 * t4
+        GFp2.mul(t1, t2),         # Y  = t1 * t2
+        GFp2.mul(t2, t4),         # Z  = t2 * t4
         t3,                     # Ta = t3
         t1                      # Tb = t1
     )
@@ -368,7 +404,7 @@ def core_test():
 
     # Test that negation works
     P = setup(G)
-    NP = setup((fp2neg(P[0]), P[1]))
+    NP = setup((GFp2.neg(P[0]), P[1]))
     NP = R1toR2(NP)
     Z = normalize(ADD(P, NP))
     testpt("negation", Z, setup(O))
@@ -415,19 +451,19 @@ def tau(P):
             0x000000000000000C0000000000000012)
 
     (Px, Py, Pz, Pta, Ptb) = P
-    t0 = fp2sqr(Px)
-    t1 = fp2sqr(Py)
-    Px = fp2mul(Px, Py)
-    Py = fp2sqr(Pz)
-    Pz = fp2add(t0, t1)
-    Py = fp2add(Py, Py)
-    t0 = fp2sub(t0, t1)
-    Py = fp2neg(Py)
-    Px = fp2mul(Px, t0)
-    Py = fp2sub(Py, t0)
-    Px = fp2mul(Px, ctau1)
-    Py = fp2mul(Py, Pz)
-    Pz = fp2mul(Pz, t0)
+    t0 = GFp2.sqr(Px)
+    t1 = GFp2.sqr(Py)
+    Px = GFp2.mul(Px, Py)
+    Py = GFp2.sqr(Pz)
+    Pz = GFp2.add(t0, t1)
+    Py = GFp2.add(Py, Py)
+    t0 = GFp2.sub(t0, t1)
+    Py = GFp2.neg(Py)
+    Px = GFp2.mul(Px, t0)
+    Py = GFp2.sub(Py, t0)
+    Px = GFp2.mul(Px, ctau1)
+    Py = GFp2.mul(Py, Pz)
+    Pz = GFp2.mul(Pz, t0)
     return (Px, Py, Pz, Pta, Ptb)
 
 
@@ -436,18 +472,18 @@ def tau_dual(P):
                  0x7FFFFFFFFFFFFFF40000000000000011)
 
     (Px, Py, Pz, Pta, Ptb) = P
-    t0  = fp2sqr(Px)
-    Pta = fp2sqr(Pz)
-    t1  = fp2sqr(Py)
-    Pz  = fp2add(Pta, Pta)
-    Pta = fp2sub(t1, t0)
-    t0  = fp2add(t0, t1)
-    Px  = fp2mul(Px, Py)
-    Pz  = fp2sub(Pz, Pta)
-    Ptb = fp2mul(Px, ctaudual1)
-    Py  = fp2mul(Pz, Pta)
-    Px  = fp2mul(Ptb, t0)
-    Pz  = fp2mul(Pz, t0)
+    t0  = GFp2.sqr(Px)
+    Pta = GFp2.sqr(Pz)
+    t1  = GFp2.sqr(Py)
+    Pz  = GFp2.add(Pta, Pta)
+    Pta = GFp2.sub(t1, t0)
+    t0  = GFp2.add(t0, t1)
+    Px  = GFp2.mul(Px, Py)
+    Pz  = GFp2.sub(Pz, Pta)
+    Ptb = GFp2.mul(Px, ctaudual1)
+    Py  = GFp2.mul(Pz, Pta)
+    Px  = GFp2.mul(Ptb, t0)
+    Pz  = GFp2.mul(Pz, t0)
     return (Px, Py, Pz, Pta, Ptb)
 
 
@@ -474,44 +510,44 @@ def delphidel(P):
              0x0FD52E9CFE00375B014D3E48976E2505)
 
     (Px, Py, Pz, Pta, Ptb) = P
-    t4 = fp2sqr(Pz)
-    t3 = fp2mul(Py, Pz)
-    t0 = fp2mul(t4, cphi4)
-    t2 = fp2sqr(Py)
-    t0 = fp2add(t0, t2)
-    t1 = fp2mul(t3, cphi3)
-    t5 = fp2sub(t0, t1)
-    t0 = fp2add(t0, t1)
-    t0 = fp2mul(t0, Pz)
-    t1 = fp2mul(t3, cphi1)
-    t0 = fp2mul(t0, t5)
-    t5 = fp2mul(t4, cphi2)
-    t5 = fp2add(t2, t5)
-    t6 = fp2sub(t1, t5)
-    t1 = fp2add(t1, t5)
-    t6 = fp2mul(t6, t1)
-    t6 = fp2mul(t6, cphi0)
-    Px = fp2mul(Px, t6)
-    t6 = fp2sqr(t2)
-    t2 = fp2sqr(t3)
-    t3 = fp2sqr(t4)
-    t1 = fp2mul(t2, cphi8)
-    t5 = fp2mul(t3, cphi9)
-    t1 = fp2add(t1, t6)
-    t2 = fp2mul(t2, cphi6)
-    t3 = fp2mul(t3, cphi7)
-    t1 = fp2add(t1, t5)
-    t2 = fp2add(t2, t3)
-    t1 = fp2mul(t1, Py)
-    Py = fp2add(t6, t2)
-    Px = fp2mul(Px, t1)
-    Py = fp2mul(Py, cphi5)
-    Px = fp2conj(Px)
-    Py = fp2mul(Py, Pz)
-    Pz = fp2mul(t0, t1)
-    Py = fp2mul(Py, t0)
-    Pz = fp2conj(Pz)
-    Py = fp2conj(Py)
+    t4 = GFp2.sqr(Pz)
+    t3 = GFp2.mul(Py, Pz)
+    t0 = GFp2.mul(t4, cphi4)
+    t2 = GFp2.sqr(Py)
+    t0 = GFp2.add(t0, t2)
+    t1 = GFp2.mul(t3, cphi3)
+    t5 = GFp2.sub(t0, t1)
+    t0 = GFp2.add(t0, t1)
+    t0 = GFp2.mul(t0, Pz)
+    t1 = GFp2.mul(t3, cphi1)
+    t0 = GFp2.mul(t0, t5)
+    t5 = GFp2.mul(t4, cphi2)
+    t5 = GFp2.add(t2, t5)
+    t6 = GFp2.sub(t1, t5)
+    t1 = GFp2.add(t1, t5)
+    t6 = GFp2.mul(t6, t1)
+    t6 = GFp2.mul(t6, cphi0)
+    Px = GFp2.mul(Px, t6)
+    t6 = GFp2.sqr(t2)
+    t2 = GFp2.sqr(t3)
+    t3 = GFp2.sqr(t4)
+    t1 = GFp2.mul(t2, cphi8)
+    t5 = GFp2.mul(t3, cphi9)
+    t1 = GFp2.add(t1, t6)
+    t2 = GFp2.mul(t2, cphi6)
+    t3 = GFp2.mul(t3, cphi7)
+    t1 = GFp2.add(t1, t5)
+    t2 = GFp2.add(t2, t3)
+    t1 = GFp2.mul(t1, Py)
+    Py = GFp2.add(t6, t2)
+    Px = GFp2.mul(Px, t1)
+    Py = GFp2.mul(Py, cphi5)
+    Px = GFp2.conj(Px)
+    Py = GFp2.mul(Py, Pz)
+    Pz = GFp2.mul(t0, t1)
+    Py = GFp2.mul(Py, t0)
+    Pz = GFp2.conj(Pz)
+    Py = GFp2.conj(Py)
     return (Px, Py, Pz, Pta, Ptb)
 
 
@@ -526,24 +562,24 @@ def delpsidel(P):
              0x334D90E9E28296F9C59195418A18C59E)
 
     (Px, Py, Pz, Pta, Ptb) = P
-    Px = fp2conj(Px)        # fpneg(Px[1]) # ?
-    Py = fp2conj(Py)        # fpneg(Py[1]) # ?
-    Pz = fp2conj(Pz)        # fpneg(Pz[1]) # ?
-    t2 = fp2sqr(Pz)
-    t0 = fp2sqr(Px)
-    Px = fp2mul(Px, t2)
-    Pz = fp2mul(t2, cpsi2)
-    t1 = fp2mul(t2, cpsi3)
-    t2 = fp2mul(t2, cpsi4)
-    Pz = fp2add(t0, Pz)
-    t2 = fp2add(t0, t2)
-    t1 = fp2add(t0, t1)
-    t2 = fp2neg(t2)
-    Pz = fp2mul(Pz, Py)
-    Px = fp2mul(Px, t2)
-    Py = fp2mul(t1, Pz)
-    Px = fp2mul(Px, cpsi1)
-    Pz = fp2mul(Pz, t2)
+    Px = GFp2.conj(Px)        # fpneg(Px[1]) # ?
+    Py = GFp2.conj(Py)        # fpneg(Py[1]) # ?
+    Pz = GFp2.conj(Pz)        # fpneg(Pz[1]) # ?
+    t2 = GFp2.sqr(Pz)
+    t0 = GFp2.sqr(Px)
+    Px = GFp2.mul(Px, t2)
+    Pz = GFp2.mul(t2, cpsi2)
+    t1 = GFp2.mul(t2, cpsi3)
+    t2 = GFp2.mul(t2, cpsi4)
+    Pz = GFp2.add(t0, Pz)
+    t2 = GFp2.add(t0, t2)
+    t1 = GFp2.add(t0, t1)
+    t2 = GFp2.neg(t2)
+    Pz = GFp2.mul(Pz, Py)
+    Px = GFp2.mul(Px, t2)
+    Py = GFp2.mul(t1, Pz)
+    Px = GFp2.mul(Px, cpsi1)
+    Pz = GFp2.mul(Pz, t2)
     return (Px, Py, Pz, Pta, Ptb)
 
 def phi(P):
@@ -748,10 +784,10 @@ def MUL(m, P):
         # Negates if c == CFALSE
         # In R2, neg(x, y, z, t) = (y, x, z, -t)
         return (
-            fp2cswap(c, P[0], P[1]),
-            fp2cswap(c, P[1], P[0]),
+            GFp2.cswap(c, P[0], P[1]),
+            GFp2.cswap(c, P[1], P[0]),
             P[2],
-            fp2cswap(c, P[3], fp2neg(P[3]))
+            GFp2.cswap(c, P[3], GFp2.neg(P[3]))
         )
 
     Q = condneg(sign_masks[64], T[digits[64]])
@@ -815,3 +851,98 @@ def mul_test():
 
 
 mul_test()
+
+
+########## Operation counts ##########
+
+def opcount_test():
+    opcounts = {}
+
+    # R1toR2
+    P = setup(G)
+    GFp2.ctr_reset()
+    Q = R1toR2(P)
+    opcounts["R1toR2"] = GFp2.ctr()
+
+    # R1toR3
+    P = setup(G)
+    GFp2.ctr_reset()
+    Q = R1toR3(P)
+    opcounts["R1toR3"] = GFp2.ctr()
+
+    # R2toR4
+    P = R1toR2(setup(G))
+    GFp2.ctr_reset()
+    Q = R2toR4(P)
+    opcounts["R2toR4"] = GFp2.ctr()
+
+    # ADD_core
+    P = R1toR3(setup(G))
+    Q = R1toR2(setup(G))
+    GFp2.ctr_reset()
+    R = ADD_core(P, Q)
+    opcounts["ADD_core"] = GFp2.ctr()
+
+    # ADD
+    P = setup(G)
+    Q = R1toR2(setup(G))
+    GFp2.ctr_reset()
+    R = ADD(P, Q)
+    opcounts["ADD"] = GFp2.ctr()
+
+    # DBL
+    P = setup(G)
+    GFp2.ctr_reset()
+    Q = DBL(P)
+    opcounts["DBL"] = GFp2.ctr()
+
+    # MUL_noendo
+    P = setup(G)
+    m = p - 10
+    GFp2.ctr_reset()
+    Q = MUL_noendo(m, P)
+    opcounts["MUL_noendo"] = GFp2.ctr()
+
+    # Phi
+    P = setup(G)
+    GFp2.ctr_reset()
+    phiP = phi(P)
+    opcounts["phi"] = GFp2.ctr()
+
+    # Psi
+    P = setup(G)
+    GFp2.ctr_reset()
+    psiP = psi(P)
+    opcounts["psi"] = GFp2.ctr()
+
+    # Phi * Psi
+    P = setup(G)
+    GFp2.ctr_reset()
+    psiphiP = psi(phiP)
+    opcounts["psiphi"] = GFp2.ctr()
+
+    # Preload
+    opcounts["preload"] = (
+        opcounts["phi"][0] + opcounts["psi"][0] + opcounts["psiphi"][0],
+        opcounts["phi"][1] + opcounts["psi"][1] + opcounts["psiphi"][1],
+        opcounts["phi"][2] + opcounts["psi"][2] + opcounts["psiphi"][2],
+        opcounts["phi"][3] + opcounts["psi"][3] + opcounts["psiphi"][3]
+    )
+
+    # MUL
+    m = getrandbits(256)
+    P = setup(G)
+    GFp2.ctr_reset()
+    mP = MUL(m, P)
+    opcounts["MUL"] = GFp2.ctr()
+
+    rows = ["R1toR2", "R1toR3", "R2toR4", "ADD_core", "ADD", "DBL",
+            "phi", "psi", "psiphi", "preload", "MUL", "MUL_noendo"]
+    print "{:10s} {:>7s} {:>7s} {:>7s} {:>7s}".format("", "M", "S", "A", "I")
+    for name in rows:
+        if name not in opcounts:
+            continue
+        opctr = opcounts[name]
+        print "{:10s} {:7.1f} {:7.1f} {:7.1f} {:7.1f}".format(name, opctr[2], opctr[1], opctr[0], opctr[3])
+
+opcount_test()
