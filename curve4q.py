@@ -340,23 +340,21 @@ def reps_test():
 #   7M    -S    4A
 def ADD_core(P, Q):
     # Order of things is slightly cleaned up
-    chi  = GFp2.mul(P[0], Q[0])
-    xi   = GFp2.mul(P[1], Q[1])
-    tau  = GFp2.mul(P[2], Q[2])
-    zeta = GFp2.mul(P[3], Q[3])
+    A = GFp2.mul(P[0], Q[0])
+    B = GFp2.mul(P[1], Q[1])
+    C = GFp2.mul(P[2], Q[2])
+    D = GFp2.mul(P[3], Q[3])
 
-    alpha = GFp2.add(tau, zeta)
-    beta  = GFp2.sub(tau, zeta)
-    mu    = GFp2.add(chi, xi)
-    nu    = GFp2.sub(chi, xi)
+    E = GFp2.add(C, D)
+    F = GFp2.sub(C, D)
+    G = GFp2.add(A, B)
+    H = GFp2.sub(A, B)
 
-    return (
-        GFp2.mul(nu, beta),
-        GFp2.mul(mu, alpha),
-        GFp2.mul(alpha,  beta),
-        mu,
-        nu
-    )
+    I = GFp2.mul(H, F)
+    J = GFp2.mul(G, E)
+    K = GFp2.mul(E, F)
+
+    return (I, J, K, G, H)
 
 # ADD
 #   R1 + R2 -> R1
@@ -368,25 +366,23 @@ def ADD(P, Q):
 #   R4 -> R1
 #   3M    4S    6A
 def DBL(P):
-    alpha = GFp2.sqr(P[0])        # alpha = X^2
-    beta  = GFp2.sqr(P[1])        # beta = Y^2
-    zeta  = GFp2.sqr(P[2])        # zeta = Z^2
+    XX = GFp2.sqr(P[0])
+    YY = GFp2.sqr(P[1])
+    ZZ = GFp2.sqr(P[2])
 
-    sigma = GFp2.add(P[0], P[1])  # sigma = X + Y
-    tau   = GFp2.sqr(sigma)       # tau = sigma^2
+    A  = GFp2.add(P[0], P[1])
+    AA = GFp2.sqr(A)
 
-    t1 = GFp2.add(alpha, beta)    # t1 = alpha + beta
-    t2 = GFp2.sub(beta, alpha)    # t2 = beta - alpha
-    t3 = GFp2.sub(tau, t1)        # t3 = tau  - t1
-    t4 = GFp2.addsub(zeta, t2)    # t4 = zeta + zeta - t2
+    B = GFp2.add(XX, YY)
+    C = GFp2.sub(YY, XX)
+    D = GFp2.sub(AA, B)
+    E = GFp2.addsub(ZZ, C)
 
-    return (
-        GFp2.mul(t3, t4),         # X  = t3 * t4
-        GFp2.mul(t1, t2),         # Y  = t1 * t2
-        GFp2.mul(t2, t4),         # Z  = t2 * t4
-        t3,                     # Ta = t3
-        t1                      # Tb = t1
-    )
+    DE = GFp2.mul(D, E)
+    BC = GFp2.mul(B, C)
+    CE = GFp2.mul(C, E)
+
+    return (DE, BC, CE, D, B)
 
 ###
 
@@ -439,7 +435,7 @@ def core_test():
                    (0x3EF69A49CB7E02375E06003D73C43EB1, 0x293EB1E26DD23B4E4E752648AC2EF0AB)))
     testpt("addition", A, thouP)
 
-#core_test()
+core_test()
 
 
 ########## Endomorphism ##########
@@ -863,7 +859,7 @@ def mul_test():
     print "endo={:.2f} noendo={:.2f} savings={:2.1f}%".format(elapsed, elapsed_noendo, savings * 100)
 
 
-mul_test()
+#mul_test()
 
 
 ########## Operation counts ##########
