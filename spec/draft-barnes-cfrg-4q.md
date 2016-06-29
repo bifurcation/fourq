@@ -172,8 +172,8 @@ for t = 255 down to 0:
   // Constant-time selection; see below
   Axy = cselect(m_t, Pxy, 1)
   Ayx = cselect(m_t, Pyx, 1)
-  A2z = cselect(m_t, P2z, 1)
-  A2dt = cselect(m_t, P2dt, 1)
+  A2z = cselect(m_t, P2z, 2)
+  A2dt = cselect(m_t, P2dt, 0)
 
   XX = Sx * Sx
   YY = Sy * Sy
