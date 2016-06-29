@@ -7,6 +7,7 @@ import re
 # For convenience
 zero = (0, 0)
 one  = (1, 0)
+two  = (2, 0)
 
 # For conditional swaps (128-bit masks)
 CFALSE = 0x00000000000000000000000000000000
@@ -16,16 +17,15 @@ CTRUE  = 0xffffffffffffffffffffffffffffffff
 p = 0x7fffffffffffffffffffffffffffffff
 
 # Curve parameter as a field element tuple
-dx = 0x5e472f846657e0fcb3821488f1fc0c8dL
-dy = 0xe40000000000000142L
-d = (dy, dx)
+d = (0xe40000000000000142L, 0x5e472f846657e0fcb3821488f1fc0c8dL)
+twod = (0x1c80000000000000284L, 0x3c8e5f08ccafc1f967042911e3f8191bL)
 
 # Generator from FourQ.c, in extended twisted Edwards coordinates
 Gx = (0x1A3472237C2FB305286592AD7B3833AA, 0x1E1F553F2878AA9C96869FB360AC77F6)
 Gy = (0x0E3FEE9BA120785AB924A2462BCBB287, 0x6E1C4AF8630E024249A7C344844C8B5C)
 G = (Gx, Gy, one, Gx, Gy)
 
-# Neutral / zero element of the curve
+# Neutral / zero element of the curve, in R1
 O = (zero, one, one, zero, one)
 
 
@@ -253,15 +253,14 @@ def fp2_test():
 #   R1toR3  1   -   2
 #   R2toR4  -   -   2
 
-# R1toR2(X, Y, Z, Ta, Tb) = (X+Y, Y-X, Z+Z, (d*Ta*Tb) + (d*Ta*Tb))
+# R1toR2(X, Y, Z, Ta, Tb) = (X+Y, Y-X, Z+Z, 2d*Ta*Tb)
 def R1toR2(P):
     TaTb = GFp2.mul(P[3], P[4])
-    dTaTb = GFp2.mul(d, TaTb)
     return (
         GFp2.add(P[0], P[1]),
         GFp2.sub(P[1], P[0]),
         GFp2.add(P[2], P[2]),
-        GFp2.add(dTaTb, dTaTb)
+        GFp2.mul(twod, TaTb)
     )
 
 # R1toR3(X, Y, Z, Ta, Tb) = (X+Y, Y-X, Z, Ta*Tb)
@@ -283,6 +282,8 @@ def R2toR4(P):
 
 # Take a curve in any representation and clear the projective factor
 def normalize(P):
+    if len(P) == 2:
+        return P
     zi = GFp2.inv(P[2])
     xz = GFp2.mul(P[0], zi)
     yz = GFp2.mul(P[1], zi)
@@ -753,16 +754,86 @@ def endo_test():
 # Naive multiply, as a baseline
 # R1 -> R1
 def MUL_noendo(m, P):
-    bits = [m & (1 << i) for i in range(256)]
+    bits = [(m & (1 << i)) >> i for i in range(256)]
 
     P2 = R1toR2(P)
+    O2 = R1toR2(setup(O))
     S = setup(O)
 
     for i in range(255, -1, -1):
         S = DBL(S)
+
         if bits[i] > 0:
             S = ADD(S, P2)
+        else:
+            S = ADD(S, O2)
+
     return S
+
+# "Baseline" multiply, just an inlined, constant-timed schoolbook
+# Mimicking the algorithm here https://tools.ietf.org/html/rfc7748#section-5
+def MUL_baseline(k, P):
+    Pxy  = GFp2.add(P[0], P[1])
+    Pyx  = GFp2.sub(P[1], P[0])
+    P2z  = GFp2.mul(two, P[2])
+    P2dt = GFp2.mul(twod, GFp2.mul(P[3], P[4]))
+
+    Sx = zero
+    Sy = one
+    Sz = one
+
+    for t in range(255, -1, -1):
+        k_t = (k >> t) & 1
+        swap = k_t * CTRUE
+        # conditionally set A = P2 or O in R2
+        # R2(O) = (1, 1, 2, 0)
+        Axy  = GFp2.cswap(swap, Pxy , one )
+        Ayx  = GFp2.cswap(swap, Pyx , one )
+        A2z  = GFp2.cswap(swap, P2z , two )
+        A2dt = GFp2.cswap(swap, P2dt, zero)
+
+        # Inline: S = DBL(S)
+        XX = GFp2.sqr(Sx)
+        YY = GFp2.sqr(Sy)
+        ZZ = GFp2.sqr(Sz)
+
+        A  = GFp2.add(Sx, Sy)
+        AA = GFp2.sqr(A)
+
+        B = GFp2.add(XX, YY)
+        C = GFp2.sub(YY, XX)
+        D = GFp2.sub(AA, B)
+        E = GFp2.addsub(ZZ, C)
+
+        F = GFp2.mul(D, E)  # 2Sx
+        G = GFp2.mul(B, C)  # 2Sy
+
+        # Inline: T = R1toR3(S)
+        Txy = GFp2.add(F, G)
+        Tyx = GFp2.sub(G, F)
+        Tz = GFp2.mul(C, E)
+        Tt = GFp2.mul(D, B)
+
+        # Inline: S = ADD_core(T, A)
+        TAxy = GFp2.mul(Txy, Axy)
+        TAyx = GFp2.mul(Tyx, Ayx)
+        TAz  = GFp2.mul(Tz, A2z)
+        TAt  = GFp2.mul(Tt, A2dt)
+
+        H = GFp2.add(TAz, TAt)
+        I = GFp2.sub(TAz, TAt)
+        K = GFp2.add(TAxy, TAyx)
+        L = GFp2.sub(TAxy, TAyx)
+
+        Sx = GFp2.mul(L, I)
+        Sy = GFp2.mul(K, H)
+        Sz = GFp2.mul(H, I)
+
+    Sz = GFp2.inv(Sz)
+    Sx = GFp2.mul(Sx, Sz)
+    Sy = GFp2.mul(Sy, Sz)
+
+    return (Sx, Sy, one, Sx, Sy)
 
 # See Algorithm 2
 def MUL(m, P):
@@ -817,6 +888,14 @@ def mul_test():
     B2 = MUL_noendo(2, A)
     testpt("mul-noendo-*2", B2, A2)
 
+    # Test multiplication by one and two (baseline)
+    A = setup(G)
+    B = MUL_baseline(1, A)
+    testpt("mul-baseline-*1", B, A)
+    A2 = DBL(A)
+    B2 = MUL_baseline(2, A)
+    testpt("mul-baseline-*2", B2, A2)
+
     # Test multiplication by one and two (with endomorphisms)
     A = setup(G)
     B = MUL(1, A)
@@ -851,15 +930,20 @@ def mul_test():
     elapsed_noendo = toc - tic
 
     tic = time()
+    testmul("mul-baseline", MUL_baseline)
+    toc = time()
+    elapsed_baseline = toc - tic
+
+    tic = time()
     testmul("mul", MUL)
     toc = time()
     elapsed = toc - tic
     savings = 1.0 - elapsed * 1.0 / elapsed_noendo
 
-    print "endo={:.2f} noendo={:.2f} savings={:2.1f}%".format(elapsed, elapsed_noendo, savings * 100)
+    print "endo={:.2f} baseline={:.2f} noendo={:.2f} savings={:2.1f}%".format(elapsed, elapsed_baseline, elapsed_noendo, savings * 100)
 
 
-#mul_test()
+mul_test()
 
 
 ########## Operation counts ##########
@@ -912,6 +996,13 @@ def opcount_test():
     Q = MUL_noendo(m, P)
     opcounts["MUL_noendo"] = GFp2.ctr()
 
+    # MUL_baseline
+    P = setup(G)
+    m = p - 10
+    GFp2.ctr_reset()
+    Q = MUL_baseline(m, P)
+    opcounts["MUL_baseline"] = GFp2.ctr()
+
     # Phi
     P = setup(G)
     GFp2.ctr_reset()
@@ -946,12 +1037,12 @@ def opcount_test():
     opcounts["MUL"] = GFp2.ctr()
 
     rows = ["R1toR2", "R1toR3", "R2toR4", "ADD_core", "ADD", "DBL",
-            "phi", "psi", "psiphi", "preload", "MUL", "MUL_noendo"]
+            "phi", "psi", "psiphi", "preload", "MUL", "MUL_noendo", "MUL_baseline"]
     print "{:10s} {:>7s} {:>7s} {:>7s} {:>7s}".format("", "M", "S", "A", "I")
     for name in rows:
         if name not in opcounts:
             continue
         opctr = opcounts[name]
-        print "{:10s} {:7.1f} {:7.1f} {:7.1f} {:7.1f}".format(name, opctr[2], opctr[1], opctr[0], opctr[3])
+        print "{:12s} {:7.1f} {:7.1f} {:7.1f} {:7.1f}".format(name, opctr[2], opctr[1], opctr[0], opctr[3])
 
 opcount_test()
