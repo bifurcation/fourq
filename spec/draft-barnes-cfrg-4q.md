@@ -1,7 +1,7 @@
 ---
 title: Curve4Q
 abbrev: 
-docname: draft-rescorla-tls-subcerts-latest
+docname: draft-barnes-cfrg-4q
 category: std
 
 ipr: trust200902
@@ -18,7 +18,11 @@ author:
        name: Richard Barnes
        organization: Mozilla
        email: rlb@ipv.sx
-
+-
+     ins: W. Ladd
+     name: Watson Ladd
+     organization: Mozilla
+     email: watsonbladd@gmail.com
 
 --- abstract
 
@@ -269,25 +273,82 @@ Our endomorphisms and isogenies mostly work in projective coordinates. We presen
 \tau is performed first and similarly \psi=\hat{\tau}\chi\tau. \hat{\tau} outputs points in R1 while
 \chi and \upsilon input and output points in projective form
 
-We begin by defining some constants [WBL: figure out how represented and convert to human form]
-
 Each of our formulas consumes X1, Y1, Z1 and produces X2, Y2, Z2  or X2, Y2, Z2, T2a, T2b. Note that
-the outputs are not on the curve: only \psi and \phi produce outputs on the curve.
-
-The following is the formula for \tau:
-    X2 = ctau*X1*Y1*(X1^2-Y1^2)
-    Y2 = (X1^2+Y1^2)*(-2*Z1^2-(X1^2-Y1^2))
-    Z2 = (X1^2+Y1^2)*(X1^2-Y1^2)
+the outputs and inputs are not necessarily on the curve.
 
 \tau is most efficiently computed by
-    A = X1*Y1
-    B = (X1+Y1)^2-2A
-    C = (X1-Y1)^2-2A
-    X2 = A*C
-    Y2 = A*(-2Z1^2-C)
-    Z2 = B*C
+     A:=X1^2;
+     B:=Y1^2;
+     C:=A+B;
+     D:=A-B;
+     X2:=ctau1*X1*Y1*D;
+     Y2:=-(2*Z1^2+D)*C;
+     Z2:=C*D;
+where ctau1=221360928884514619410*i + 33754435779700894835198039471158097091
 
-[TODO] More here
+\hat{\tau} may be expressed as
+	
+  A:=X1^2;
+  B:=Y1^2;
+  C:=A+B;
+  T2a:=B-A;
+  D:=2*Z1^2-Ta;
+  T2b:=ctaudual1*X1*Y1;
+  X2:=T2b*C;
+  Y2:=D*T2a;
+  Z2:=D*C;
+
+where ctaudual1:=170141183460469231510326374831369486353*i + 99231301967130569661901792840482943028;
+
+\upsilon is expressed as
+  A:=cphi0*X1*Y1;
+  B:=Y1*Z1;
+  C:=Y1^2;
+  D:=Z1^2;
+  F:=D^2;
+  G:=B^2;
+  H:=C^2;
+  I:=cphi1*B;
+  J:=C+cphi2*D;
+  K:=cphi8*G+H+cphi9*F;
+  X2:=Frob(A*K*(I+J)*(I-J));
+  L:=C+cphi4*D;
+  M:=cphi3*B;
+  N:=(L+M)*(L-M);
+  Y2:=Frob(cphi5*D*N*(H+cphi6*G+cphi7*F));
+  Z2:=Frob(B*K*N);					
+
+where
+cphi0:=49615650983565284830950896420241471514*i + 110680464442257309687;
+cphi1:=131306912742858181648727312260439119609*i + 92233720368547758087;
+cphi2:=160666015865631300014011952927357137809*i + 276701161105643274261;
+cphi3:=107027644557995218531204623577807990436*i + 36893488147419103235;
+cphi4:=24279268184862963117522688682631129173*i + 55340232221128654851;
+cphi5:=92472642025247131565767320804994133491*i + 184467440737095516175;
+cphi6:=14804100590025031399847337894104161255*i + 332041393326771929112;
+cphi7:=76283848507754718862858058709728786458*i + 442721857769029238819;
+cphi8:=41635071732389019719735756359456329456*i + 3135946492530623774960;
+cphi9:=21045324596686230484035983431638590725*i + 39844967199212631493615;
+
+and lastly \chi is
+  A:=Frob(X1);  
+  B:=Frob(Y1); 
+  C:=Frob(Z1)^2;   
+  D:=A^2; 
+  F:=B^2; 
+  G:=B*(D+cpsi2*C);
+  H:=-(D+cpsi4*C);
+  X2:=cpsi1*A*C*H;
+  Y2:=G*(D+cpsi3*C);
+  Z2:=G*H; 
+
+where
+cpsi1:=4095177184363520459066*i + 57123674603396429897431647433607300847;
+cpsi2:=44824135016688633386011024159913800562*i + 4205857648805777768771;
+cpsi3:=101947809620085063283442671593521101409*i + 110680464442257309705;
+cpsi4:=68193373840384168448244632122363004318*i + 170141183460469231621006839273626796022;
+
+
 ### Scalar Recoding
 
 Scalar recoding has two parts. The first is to decompose the scalar into four small integers, the second
@@ -330,7 +391,7 @@ R3 form.
 
 T will be a table of 8 R2 format points.
 T[0] is P in R2
-T[1] is P+Q, again in R2
+T[1] is P+Q
 T[2] is R+P
 T[3] is R+P+Q
 T[4] is S+P
@@ -349,6 +410,7 @@ for i=63 to 0 do:
     Q=ADD(Q, s[i]*T[di])
 return Q
 ~~~~~
+We note that taking the inverse of a point is simply negating the y coordinate.
 This multiplication algorithm has a regular pattern of operations and no exceptional cases.
 [ TODO ]
 
