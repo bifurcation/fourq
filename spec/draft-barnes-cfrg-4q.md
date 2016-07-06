@@ -18,12 +18,6 @@ author:
        name: Richard Barnes
        organization: Mozilla
        email: rlb@ipv.sx
--
-     ins: W. Ladd
-     name: Watson Ladd
-     organization: Mozilla
-     email: watsonbladd@gmail.com
-
 --- abstract
 
 This document specifies an elliptic curve over a quadratic extension
