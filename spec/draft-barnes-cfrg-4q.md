@@ -30,7 +30,8 @@ This document specifies an elliptic curve over a quadratic extension
 of a prime field that offers the fastest known Diffie-Hellman key
 agreements while using compact keys. This high performance does not
 require vectorization and applies to signature verification. The best
-known attacks require 2^125 or so operations, comparable to X25519.
+known attacks require 2^125 or so operations, comparable to X25519, while
+performance is twice as good.
 
 --- middle
 
@@ -47,11 +48,8 @@ known attacks require 2^125 or so operations, comparable to X25519.
 # Four-dimensional decompsitions
 
 As described in [Curve4Q], the elliptic curve described in this document is
-the only known curve that satisfies the following requirements:
-
-* GF(p^2) for p = 2^127-1
-* 4-dimensional decomposition
-* Security of around 2^120 operations for discrete log computation
+the only known curve that permits a four dimensional GLS-GLV decomposition
+over the highly efficient field GF(p^2) with p=2^127-1.
 
 # Mathematical Prerequisites
 
@@ -94,14 +92,9 @@ coordinates are serialized as little-endian integers.
 |................|................|................|................|
 ~~~~~
 
-[[ Ed. - Endianness? ]]
-
-[[ Ed. - Can we get by with just X? ]]
-[[WBL: Nope. p^2-1 is divisible by 2^128. This makes taking a square root Lots Of Fun.]]
-
 Addition of two elements A=a0+a1*i, B=b0+b1*i is performed coordinatewise: A+B=(a0+b0)+(a1+b1)*i.
 Multiplication is similarly simple: A*B=(a0b0-a1b1)+(a0b1+a1b0)*i. Lastly there is a field automorphism
-Frob_p(A)=a0-a1*i.
+Frob(A)=a0-a1*i.
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
@@ -256,16 +249,50 @@ they are not needed we save operations. In three of these representations
 T=XY/Z is used to define them.
 
 R1 points are (X,Y,Z,Ta,Tb) where T=Ta*Tb. R2 points are
-(X+Y,Y-Z,2Z,2dT). R3 are (X+Y,Y-X,Z,T), and R4 is (X,Y,Z).  A point
+(N, D, E, F)=(X+Y,Y-Z,2Z,2dT). R3 are (N, D, Z, T)=(X+Y,Y-X,Z,T), and R4 is (X,Y,Z).  A point
 doubling takes an R4 point, and produces an R1 point.  There are two
 kinds of addition: ADD_core eats an R2 and an R3 point and produces an
 R1 point, and ADD eats an R1 and an R2 point, by converting the R1
 point into an R3 point and then proceeding. Exposing these two
 operations and the multiple representations helps save time in
-precomputing tables and in using the tables effectively.
+precomputing tables and in using the tables effectively. The conversions
+between point formats are obvious.
 
-These operations have the following explicit formulas largely taken from [EFD]
-[TODO]
+These operations have the following explicit formulas largely taken
+from [FourQlib] developed by many people over the years [TODO: cite]. In each
+formula the variables are suffixed with numbers: doubling takes
+variables with suffix 1 and outputs those with suffix 3, addition
+those with suffix 1 and 2 and outputs suffix 3. These formulas include
+intermediate variables to save operations, which are single capital letters.
+
+Doubling is computed as follows:
+         A = X1^2
+         B = Y1^2
+         C = 2*Z1^2
+         D = -1*A
+         E = (X1+Y1)^2-A-B
+         G = D+B
+         F = G-C
+         H = D-B
+         X3 = E*F
+         Y3 = G*H
+         Ta3 = E
+         Tb3 = H
+         Z3 = F*G
+
+ADD_core is computed as follows:
+         A = D1*D2
+         B = N1*N2
+         C = T2*F1
+         D = Z2*E1
+         E = B-A
+         F = D-C
+         G = D+C
+         H = B+A
+         X3 = E*F
+         Y3 = G*H
+         T3 = E*H
+         Z3 = F*G
 
 ### Endomorphisms and Isogenies
 Our endomorphisms and isogenies mostly work in projective coordinates. We present formulas for
@@ -360,10 +387,25 @@ vectors with integer coordinates b1, b2, b3, b4. These constants are
 64 bit. Then there are four constants l1, l2, l3, l4 which are long
 integers used to implement rounding.
 
-[TODO: determine why the ti can be 64 bits. Possible magic]
+l1 = 50127518246259276682880317011538934615153226543083896339791
+l2 = 22358026531042503310338016640572204942053343837521088510715
+l3 = 5105580562119000402467322500999592531749084507000101675068
+l4 = 19494034873545274265741574254707851381713530791194721254848
+
+b1 = [650487742939046294, -1397215820276968864, 523086274270593807,
+   -598824378691085905]
+
+b2 = [2110318963211420372, -1, 1, 2727991412926801872]
+
+b3 = [1705647224544756482, 199320682881407569,
+   -3336360048424633503, 765171327772315031]
+
+b4 = [1400113754146392127, 3540637644719456050, -471270406870313397, -1789345740969872106]
+
 Let c=2b1-b2+5b3+2b4 and c'=2b1-b2+5b3+b4. Then compute ti=floor(li*m/2^256), and then compute
 a=(a1, a2, a3, a4)=(m,0,0,0)-t1*b1-t2*b2-t3*b3-t4*b4. Precisely one of a+c and a+c' has an odd first
-coordinate: this is the one fed into the next scalar recoding step.
+coordinate: this is the one fed into the next scalar recoding step. Each entry is 64 bits after this
+calculation.
 
 The scalar recoding step takes the four 64 bit integers a1, a2, a3, a4
 from the previous step and outputs two arrays m[0]..m[64] and
@@ -412,23 +454,21 @@ return Q
 ~~~~~
 We note that taking the inverse of a point is simply negating the y coordinate.
 This multiplication algorithm has a regular pattern of operations and no exceptional cases.
-[ TODO ]
 
 # IANA Considerations
 
 # Security Considerations
 
-Claus Diem has steadily reduced the security
-of elliptic curves defined over extension fields of odd prime fields
-along with Sameav. There is considerable concern about curves like
+Claus Diem has steadily reduced the security of elliptic curves
+defined over extension fields of degree greater then two over large
+characteristic fields. There is considerable concern about curves like
 FourQ defined over extension fields, which are considered less
 conservative then curves over prime fields. While the best attack for
 Diffie-Hellman on this curve remains generic, this may change.
 
-It is absolutely
-essential that points input to scalar multiplication algorithms are
-checked for being on the curve first. Removing such checks may result
-in revealing the entire scalar to an attacker.
+It is absolutely essential that points input to scalar multiplication
+algorithms are checked for being on the curve first. Removing such
+checks may result in revealing the entire scalar to an attacker.
 
 The arithmetic operations and table loads must be done in constant
 time to prevent timing attacks. Side-channel analysis is a constantly
