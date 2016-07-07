@@ -3,7 +3,7 @@ title: Curve4Q
 abbrev: 
 docname: draft-barnes-cfrg-4q
 category: std
-
+ 
 ipr: trust200902
 area: Security
 workgroup: 
@@ -18,6 +18,43 @@ author:
        name: Richard Barnes
        organization: Mozilla
        email: rlb@ipv.sx
+ -
+       ins: W. Ladd
+       name: Watson Ladd
+       organization: UC Berkeley
+       email: watsonbladd@gmail.com
+
+informative:
+   EFD:
+      target: https://hyperelliptic.org/EFD/
+      title: Explicit-Formulas Database
+      author:
+        -
+                ins: D.J. Bernstein
+        -
+                ins: T. Lange
+   Curve4Q:
+      target: https://eprint.iacr.org/2015/565.pdf
+      title: "FourQ:four-dimensional decompositions on a Q-curve over the Mersenne prime"
+      author:
+        -
+                ins: C. Costello
+        -
+                ins: P. Longa
+                
+   TwistedRevisted:
+      target: http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
+      title: Twisted Edwards Curves Revisted
+      author:
+        -
+            ins: H. Hisil
+        -
+            ins: K.H.Wong
+        -
+            ins: G. Carter
+        -
+            ins: E. Dawson
+      
 --- abstract
 
 This document specifies an elliptic curve over a quadratic extension
@@ -31,7 +68,9 @@ performance is twice as good.
 
 # Introduction
 
-[[ Ed. - TODO ]]
+Public key cryptography continues to be computationally expensive particularly on less powerful devices. While
+recent advances have substantially reduced the cost of elliptic curve operations, the use of endomorphisms enables
+even more speedups.
 
 ## Comparison to prior X25519 / X448
 
@@ -88,7 +127,7 @@ coordinates are serialized as little-endian integers.
 
 Addition of two elements A=a0+a1*i, B=b0+b1*i is performed coordinatewise: A+B=(a0+b0)+(a1+b1)*i.
 Multiplication is similarly simple: A*B=(a0b0-a1b1)+(a0b1+a1b0)*i. Lastly there is a field automorphism
-Frob(A)=a0-a1*i.
+conj(A)=a0-a1*i.
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
@@ -150,6 +189,7 @@ reference for implementers who might want a simpler implementation. The algorith
 in the next section provides substantially greater performance.
 
 This code uses formulas from [TwistedRevisted].
+
 ~~~~~
 Inputs:
 - A curve point P = (X, Y)
@@ -224,14 +264,12 @@ computed, e.g., as mask(c) = 0 - c.
 
 ## Optimized Point Multiplication Algorithm
 
-This algorithm takes a scalar m and a point P and computes 392*m*P. As
-392 is the cofactor, it suffices to check that P is on the curve to
-prevent small-subgroup attacks. This algorithm uses isogenies to speed
-up the scalar multiplication. The algorithm computes Q=392*P via a
-simple addition chain. It then computes \phi(Q), \psi(Q), and
-\psi(\phi(Q)), where \phi and \psi are endomorphisms and takes
-mQ=a_0*P+a_1*\phi(Q)+a_2*\psi(Q)+a_3*\psi(\phi(Q)), where a_0, a_1,
-a_2, and a_3 have been computed as below. It is far more efficient then the above one
+This algorithm takes a scalar m and a point P which is a N torsion point and computes m*P.
+It computes phi(P), psi(P), and
+psi(phi(P)), where phi and psi are endomorphisms and takes
+m*P=a_0*P+a_1*phi(P)+a_2*psi(P)+a_3*psi(phi(P)), where a_0, a_1,
+a_2, and a_3 have been computed as below. It is far more efficient then the above one.
+In its description we make use of constants listed in an appendix.
 
 ### Alternative Point Representations and addition laws
 
@@ -252,122 +290,119 @@ operations and the multiple representations helps save time in
 precomputing tables and in using the tables effectively. The conversions
 between point formats are obvious.
 
-These operations have the following explicit formulas largely taken
-from [FourQlib] developed by many people over the years [TODO: cite]. In each
-formula the variables are suffixed with numbers: doubling takes
-variables with suffix 1 and outputs those with suffix 3, addition
-those with suffix 1 and 2 and outputs suffix 3. These formulas include
-intermediate variables to save operations, which are single capital letters.
+These operations have the following explicit formulas developed by
+many people over the years ([EFD],[TwistedRevisted]). We present
+the operations as functions in pseudocode.
 
-Doubling is computed as follows:
-         A = X1^2
-         B = Y1^2
-         C = 2*Z1^2
-         D = -1*A
-         E = (X1+Y1)^2-A-B
-         G = D+B
-         F = G-C
-         H = D-B
-         X3 = E*F
-         Y3 = G*H
-         Ta3 = E
-         Tb3 = H
-         Z3 = F*G
+Doubling is computed as follows
+
+~~~~
+DBL(X1, Y1, Z1):
+  A = X1^2
+  B = Y1^2
+  C = 2*Z1^2
+  D = -1*A
+  E = (X1+Y1)^2-A-B
+  G = D+B
+  F = G-C
+  H = D-B
+  X3 = E*F
+  Y3 = G*H
+  Ta3 = E
+  Tb3 = H
+  Z3 = F*G
+return(X3, Y3, Z3, Ta3, Tb3)
+~~~~
 
 ADD_core is computed as follows:
-         A = D1*D2
-         B = N1*N2
-         C = T2*F1
-         D = Z2*E1
-         E = B-A
-         F = D-C
-         G = D+C
-         H = B+A
-         X3 = E*F
-         Y3 = G*H
-         T3 = E*H
-         Z3 = F*G
+
+~~~~
+ADD_core(N1, D1, E1, F1, N2, D2, Z2, T2):
+   A = D1*D2
+   B = N1*N2
+   C = T2*F1
+   D = Z2*E1
+   E = B-A
+   F = D-C
+   G = D+C
+   H = B+A
+   X3 = E*F
+   Y3 = G*H
+   Ta3 = E
+   Tb3 = H
+   Z3 = F*G
+return (X3, Y3, Z3, Ta3, Tb3)
+~~~~
 
 ### Endomorphisms and Isogenies
+
 Our endomorphisms and isogenies mostly work in projective coordinates. We present formulas for
-\tau and \hat{\tau}, and then for \upsilon and \chi. \phi=\hat{\tau}\upsilon\tau, where of course
-\tau is performed first and similarly \psi=\hat{\tau}\chi\tau. \hat{\tau} outputs points in R1 while
-\chi and \upsilon input and output points in projective form
+tau and tau_dual, and then for upsilon and chi. phi(Q)=tau_dual(upsilon(tau(Q)), where of course
+tau is performed first and similarly psi(Q)=tau_dual(chi(tau(Q))). tau_dual outputs points in R1,
+tau consumes affine points, and chi and upsilon input and output points in projective coordinates on a different curve.
 
-Each of our formulas consumes X1, Y1, Z1 and produces X2, Y2, Z2  or X2, Y2, Z2, T2a, T2b. Note that
-the outputs and inputs are not necessarily on the curve.
+~~~~
+tau(X1, Y1):
+   A = X1^2
+   B = Y1^2
+   C = A+B
+   D = A-B
+   X2 = ctau1*X1*Y1*D
+   Y2 = -(2*Z1^2+D)*C
+   Z2 = C*D
+return(X2, Y2, Z2)
+~~~~
 
-\tau is most efficiently computed by
-     A:=X1^2;
-     B:=Y1^2;
-     C:=A+B;
-     D:=A-B;
-     X2:=ctau1*X1*Y1*D;
-     Y2:=-(2*Z1^2+D)*C;
-     Z2:=C*D;
-where ctau1=221360928884514619410*i + 33754435779700894835198039471158097091
+~~~~
+ tau_dual(X1, Y1, Z1):
+  A = X1^2
+  B = Y1^2
+  C = A+B
+  T2a = B-A
+  D = 2*Z1^2-Ta
+  T2b = ctaudual1*X1*Y1
+  X2 = T2b*C
+  Y2 = D*T2a
+  Z2 = D*C
+return(X2, Y2, Z2)
+~~~~
 
-\hat{\tau} may be expressed as
-	
-  A:=X1^2;
-  B:=Y1^2;
-  C:=A+B;
-  T2a:=B-A;
-  D:=2*Z1^2-Ta;
-  T2b:=ctaudual1*X1*Y1;
-  X2:=T2b*C;
-  Y2:=D*T2a;
-  Z2:=D*C;
+~~~~
+upsilon(X1, Y1, Z1):
+   A = cphi0*X1*Y1
+   B = Y1*Z1
+   C = Y1^2
+   D = Z1^2
+   F = D^2
+   G = B^2
+   H = C^2
+   I = cphi1*B
+   J = C+cphi2*D
+   K = cphi8*G+H+cphi9*F
+   X2 = conj(A*K*(I+J)*(I-J))
+   L = C+cphi4*D
+   M = cphi3*B
+   N = (L+M)*(L-M)
+   Y2 = conj(cphi5*D*N*(H+cphi6*G+cphi7*F))
+   Z2 = conj(B*K*N)                                      
+return(X2, Y2, Z2)
+~~~~
 
-where ctaudual1:=170141183460469231510326374831369486353*i + 99231301967130569661901792840482943028;
+~~~~
+chi(X1, Y1, Z1):
+   A = conj(X1)  
+   B = conj(Y1) 
+   C = conj(Z1)^2   
+   D = A^2 
+   F = B^2 
+   G = B*(D+cpsi2*C)
+   H = -(D+cpsi4*C)
+   X2 = cpsi1*A*C*H
+   Y2 = G*(D+cpsi3*C)
+   Z2 = G*H 
+return(X2, Y2, Z2)
+~~~~
 
-\upsilon is expressed as
-  A:=cphi0*X1*Y1;
-  B:=Y1*Z1;
-  C:=Y1^2;
-  D:=Z1^2;
-  F:=D^2;
-  G:=B^2;
-  H:=C^2;
-  I:=cphi1*B;
-  J:=C+cphi2*D;
-  K:=cphi8*G+H+cphi9*F;
-  X2:=Frob(A*K*(I+J)*(I-J));
-  L:=C+cphi4*D;
-  M:=cphi3*B;
-  N:=(L+M)*(L-M);
-  Y2:=Frob(cphi5*D*N*(H+cphi6*G+cphi7*F));
-  Z2:=Frob(B*K*N);					
-
-where
-cphi0:=49615650983565284830950896420241471514*i + 110680464442257309687;
-cphi1:=131306912742858181648727312260439119609*i + 92233720368547758087;
-cphi2:=160666015865631300014011952927357137809*i + 276701161105643274261;
-cphi3:=107027644557995218531204623577807990436*i + 36893488147419103235;
-cphi4:=24279268184862963117522688682631129173*i + 55340232221128654851;
-cphi5:=92472642025247131565767320804994133491*i + 184467440737095516175;
-cphi6:=14804100590025031399847337894104161255*i + 332041393326771929112;
-cphi7:=76283848507754718862858058709728786458*i + 442721857769029238819;
-cphi8:=41635071732389019719735756359456329456*i + 3135946492530623774960;
-cphi9:=21045324596686230484035983431638590725*i + 39844967199212631493615;
-
-and lastly \chi is
-  A:=Frob(X1);  
-  B:=Frob(Y1); 
-  C:=Frob(Z1)^2;   
-  D:=A^2; 
-  F:=B^2; 
-  G:=B*(D+cpsi2*C);
-  H:=-(D+cpsi4*C);
-  X2:=cpsi1*A*C*H;
-  Y2:=G*(D+cpsi3*C);
-  Z2:=G*H; 
-
-where
-cpsi1:=4095177184363520459066*i + 57123674603396429897431647433607300847;
-cpsi2:=44824135016688633386011024159913800562*i + 4205857648805777768771;
-cpsi3:=101947809620085063283442671593521101409*i + 110680464442257309705;
-cpsi4:=68193373840384168448244632122363004318*i + 170141183460469231621006839273626796022;
 
 
 ### Scalar Recoding
@@ -381,48 +416,33 @@ vectors with integer coordinates b1, b2, b3, b4. These constants are
 64 bit. Then there are four constants l1, l2, l3, l4 which are long
 integers used to implement rounding.
 
-l1 = 50127518246259276682880317011538934615153226543083896339791
-l2 = 22358026531042503310338016640572204942053343837521088510715
-l3 = 5105580562119000402467322500999592531749084507000101675068
-l4 = 19494034873545274265741574254707851381713530791194721254848
-
-b1 = [650487742939046294, -1397215820276968864, 523086274270593807,
-   -598824378691085905]
-
-b2 = [2110318963211420372, -1, 1, 2727991412926801872]
-
-b3 = [1705647224544756482, 199320682881407569,
-   -3336360048424633503, 765171327772315031]
-
-b4 = [1400113754146392127, 3540637644719456050, -471270406870313397, -1789345740969872106]
 
 Let c=2b1-b2+5b3+2b4 and c'=2b1-b2+5b3+b4. Then compute ti=floor(li*m/2^256), and then compute
 a=(a1, a2, a3, a4)=(m,0,0,0)-t1*b1-t2*b2-t3*b3-t4*b4. Precisely one of a+c and a+c' has an odd first
 coordinate: this is the one fed into the next scalar recoding step. Each entry is 64 bits after this
-calculation.
+calculation, and so the ti and m can be truncated to 64 bits.
 
-The scalar recoding step takes the four 64 bit integers a1, a2, a3, a4
+The second step takes the four 64 bit integers a1, a2, a3, a4
 from the previous step and outputs two arrays m[0]..m[64] and
 d[0]..d[64]. Each entry of d is between 0 and 7, and each entry in m
 is -1 or 0. Rather then describe the properties required of this
 encoding, we present the algorithm. bit(x, n) denotes the nth bit of x.
+
 ~~~~~
 m[64]=-1
 for i=0 to 63 do
-    d[i] = 0
-    m[i] = -bit(a1, i+1)
-    for j = 2 to 4 do:
-    	d[i] = d[i]+bit(aj, 0)<<(j-2)
-	c = (bit(a1, i+1)|bit(aj,0)) xor bit(a1, i+1)
-	aj = aj/2+c
+   d[i] = 0
+   m[i] = -bit(a1, i+1)
+   for j = 2 to 4 do:
+      d[i] = d[i]+bit(aj, 0)<<(j-2)
+      c = (bit(a1, i+1)|bit(aj,0)) xor bit(a1, i+1)
+      aj = aj/2+c
 d[64]=a2+2a3+4a
 ~~~~~
+
 ### Multiplication
-We begin by taking the input point P and multiplying by 392 using a double and add routine.
 
-Next we recode the scalar m into d[i] and m[i].
-
-Next comes table initialization. Let Q=\psi(P), R=\phi(P), S=\psi(\phi(P)), all in R2, and take P in
+Next comes table initialization. Let Q=psi(P), R=phi(P), S=psi(phi(P)), all in R2, and take P in
 R3 form.
 
 T will be a table of 8 R2 format points.
@@ -439,17 +459,48 @@ By converting the table entries as soon as they are computed ADD_core can be use
 extraneous arithmetic operations.
 
 Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then our multiplication algorithm is the following:
+
 ~~~~~
+
 Q = s[64]*T[d[64]] in R4
 for i=63 to 0 do:
     Q=DBL(Q)
     Q=ADD(Q, s[i]*T[di])
 return Q
+
 ~~~~~
+
 We note that taking the inverse of a point is simply negating the y coordinate.
-This multiplication algorithm has a regular pattern of operations and no exceptional cases.
+This multiplication algorithm is only valid for N torsion points. It will produce the
+wrong answer for points that are not N torsion points, and in the process cause massive
+damage to security. Implementations MUST NOT use this algorithm on anything that is not
+a torsion point.
+
+# Use of the scalar multiplication primitive in Diffie-Hellman
+
+The above scalar multiplication primitive can be used to implement elliptic curve Diffie-Hellman
+with cofactor. To multiply by the cofactor of 392 requires nine doublings and two additions.
+
+~~~
+DH(m, P):
+      Check P is on the curve: if not return failure
+      Q = 392*P
+      Compute m*Q with the multiplication algorithm
+return m*Q
+~~~~
+
+Two users, Alice and Bob, can carry out the following steps to derive a shared key:
+Both pick a random string of 32 bytes, mA and mB respectively. Alice computes
+A = DH(mA, G), Bob B = DH(mB, G). They exchange A and B, and then Alice computes
+KAB = DH(mA, B), while Bob computes KBA = DH(mB, A). The coordinates of G are
+found in the appendix. [[TODO: test vector and make this true]]
+
+It is possible to have an even more efficient fixed-base multiplication, either by storing
+the table that the above routine uses in memory, or via comb-based methods.
 
 # IANA Considerations
+
+IANA need take no action.
 
 # Security Considerations
 
@@ -462,10 +513,64 @@ Diffie-Hellman on this curve remains generic, this may change.
 
 It is absolutely essential that points input to scalar multiplication
 algorithms are checked for being on the curve first. Removing such
-checks may result in revealing the entire scalar to an attacker.
+checks may result in revealing the entire scalar to an attacker. Implementations
+MUST check that the points are on the curve. The curve is not twist-secure: single
+coordinate ladders MUST NOT operate on the twist but MUST validate points before
+operating on them.
 
 The arithmetic operations and table loads must be done in constant
 time to prevent timing attacks. Side-channel analysis is a constantly
-moving field.
+moving field, and implementors must be extremely careful.
 
 --- back
+
+# Constants
+ctau1= 221360928884514619410*i + 33754435779700894835198039471158097091
+
+ctaudual1 = 170141183460469231510326374831369486353*i + 99231301967130569661901792840482943028
+
+cphi0 = 49615650983565284830950896420241471514*i + 110680464442257309687
+
+cphi1 = 131306912742858181648727312260439119609*i + 92233720368547758087
+
+cphi2 = 160666015865631300014011952927357137809*i + 276701161105643274261
+
+cphi3 = 107027644557995218531204623577807990436*i + 36893488147419103235
+
+cphi4 = 24279268184862963117522688682631129173*i + 55340232221128654851
+
+cphi5 = 92472642025247131565767320804994133491*i + 184467440737095516175
+
+cphi6 = 14804100590025031399847337894104161255*i + 332041393326771929112
+
+cphi7 = 76283848507754718862858058709728786458*i + 442721857769029238819
+
+cphi8 = 41635071732389019719735756359456329456*i + 3135946492530623774960
+
+cphi9 = 21045324596686230484035983431638590725*i + 39844967199212631493615
+
+cpsi1 = 4095177184363520459066*i + 57123674603396429897431647433607300847
+
+cpsi2 = 44824135016688633386011024159913800562*i + 4205857648805777768771
+
+cpsi3 = 101947809620085063283442671593521101409*i + 110680464442257309705
+
+cpsi4 = 68193373840384168448244632122363004318*i + 170141183460469231621006839273626796022
+
+l1 = 50127518246259276682880317011538934615153226543083896339791
+
+l2 = 22358026531042503310338016640572204942053343837521088510715
+
+l3 = 5105580562119000402467322500999592531749084507000101675068
+
+l4 = 19494034873545274265741574254707851381713530791194721254848
+
+b1 = [650487742939046294, -1397215820276968864, 523086274270593807,
+   -598824378691085905]
+
+b2 = [2110318963211420372, -1, 1, 2727991412926801872]
+
+b3 = [1705647224544756482, 199320682881407569,
+   -3336360048424633503, 765171327772315031]
+
+b4 = [1400113754146392127, 3540637644719456050, -471270406870313397, -1789345740969872106]
