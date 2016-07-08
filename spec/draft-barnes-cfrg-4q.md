@@ -78,11 +78,12 @@ even more speedups.
 * Faster due to endomorphisms
 * More magic: potentially risky.
 
-# Four-dimensional decompsitions
+# Four-dimensional decompositions
 
-As described in [Curve4Q], the elliptic curve described in this document is
-the only known curve that permits a four dimensional GLS-GLV decomposition
-over the highly efficient field GF(p^2) with p=2^127-1.
+As described in [Curve4Q], the elliptic curve described in this document is 
+the only known curve that permits a four dimensional decomposition over the 
+highly efficient field GF(p^2) with p = 2^127 - 1 while offering approximately 
+128 bits of security.
 
 # Mathematical Prerequisites
 
@@ -94,13 +95,15 @@ Curve4Q is the twisted Edwards curve over GF(p^2) defined by the following curve
 equation:
 
 ~~~~~
-Y^2 - X^2 = 1 + d * X^2 * Y^2, with
+E: -x^2 + y^2 = 1 + d * x^2 * y^2, with
 
-d = 0x00000000000000e40000000000000142 +
-    0x5e472f846657e0fcb3821488f1fc0c8d * i
+d = 0x00000000000000e40000000000000142 + 0x5e472f846657e0fcb3821488f1fc0c8d * i
 ~~~~~
 
-This order of this curve is 23 ·72 ·N, where N is the following 246-bit prime:
+Let E(GF(p^2)) be the set of GF(p^2)-rational points lying on the curve equation E. 
+This set forms an abelian group for which (0,1) is the neutral element and the inverse 
+of a point (x, y) is given by (-x, y). The order of this group is \#E = 2^3 · 7^2 · N, 
+where N is the following 246-bit prime:
 
 ~~~~~
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
@@ -109,29 +112,35 @@ N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 
 # Curve Points
 
-Elements of GF(p) are represented as 16-octet little-endian integers.  An element
-x0 + x1*i of GF(p^2) is represented on the wire by the concatenation of the byte strings for
-x0 and x1. Implementations will use whatever internal representation they desire, but we will
-describe the operations on elements of GF(p^2) assuming that X=x0+x1*i, with each x0 and x1
-an element of GF(p).
+Elements a = (a0, a1, ... , a126)_2 in GF(p) are represented as 128-bit (16-octet) little-endian 
+integers by concatenating a || 0, i.e., elements of GF(p) are encoded as (a0, a1, ... , a126, 0)_2. 
+An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation of the encodings 
+for x0 and x1.  Implementations will use whatever internal representation they desire, but we will 
+describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, where x0 and x1 are elements 
+of GF(p).
 
-A point on this curve is serialized as a sequence of 64 octets, representing
-the point's coordinates X = x0 + x1*i and Y = y0 + y1*i.  The individual
-coordinates are serialized as little-endian integers.
+Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is serialized as a 512-bit (64-octet) 
+sequence, which consists of the concatenation of the 256-bit encoding of x = x0 + x1\*i followed by the 
+256-bit encoding of y = y0 + y1\*i.
 
 ~~~~~
-|--------------- X ---------------|--------------- Y ---------------|
-|        x0      |        x1      |        y0      |        y1      |
-|................|................|................|................|
+|--------------- x ---------------|--------------- y ---------------|
+|       x0     |0|       x1     |0|       y0     |0|       y1     |0|
+|..............|.|..............|.|..............|.|..............|.|
 ~~~~~
 
-Addition of two elements A=a0+a1*i, B=b0+b1*i is performed coordinatewise: A+B=(a0+b0)+(a1+b1)*i.
-Multiplication is similarly simple: A*B=(a0b0-a1b1)+(a0b1+a1b0)*i. Lastly there is a field automorphism
-conj(A)=a0-a1*i.
+Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of GF(p^2). Addition of A and B is performed coordinate-wise: 
+A+B = (a0+b0) + (a1+b1)\*i, as well as subtraction: A-B = (a0-b0) + (a1-b1)\*i. Multiplication is similarly simple: 
+A\*B = (a0\*b0-a1\*b1) + (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1\*b1) + ((a0+a1)\*(b0+b1)-a0\*b0-a1\*b1)\*i.
+Squaring A^2 is computed as (a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is computed as a0/(a0^2+a1^2) - i\*a1/(a0^2+a1^2). 
+Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
+
+Inversion of field elements can be computed in constant-time using one exponentiation via Fermat's Little 
+Theorem: 1/a = a^(p - 2) = a^(2^127 - 3). 
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
-represented by tuples of field elements (X, Y).
+represented by tuples of field elements (x, y).
 
 ~~~~~
 <CODE BEGINS>
@@ -168,7 +177,7 @@ def encodePoint(P):
 
 The Curve4Q function produces a 64-octet string from an input point P and a
 256-bit integer coefficient m.  The output of the Curve4Q function
-are the coordinates of the curve point m*P, encoded as described above.
+are the coordinates of the curve point [m]*P, encoded as described above.
 
 ~~~~~
 Curve4Q(m, P) = encodeGFp2(MUL(m, P)[0])
@@ -176,7 +185,7 @@ Curve4Q(m, P) = encodeGFp2(MUL(m, P)[0])
 
 The function encodeGFp2 is defined above.  The MUL function represents scalar
 multiplication according to the group law of the curve.  We give two explicit
-algorithms for computing MUL below: A baseline algorithm that is short, simple,
+algorithms for computing MUL below: a baseline algorithm that is short, simple,
 and slow, and an optimized algorithm that uses some precomputation to achieve
 significant speed benefits.
 
@@ -188,17 +197,17 @@ The function defined here represents a constant-time implementation of
 reference for implementers who might want a simpler implementation. The algorithm
 in the next section provides substantially greater performance.
 
-This code uses formulas from [TwistedRevisted].
+This code uses formulas from [TwistedRevisited].
 
 ~~~~~
 Inputs:
-- A curve point P = (X, Y)
+- A curve point P = (x, y)
 - A 256-bit integer m
 
-Pxy = X + Y
-Pyx = Y - X
+Pxy = x + y
+Pyx = y - x
 P2z = 2
-P2dt = 2 * d * X * Y
+P2dt = 2 * d * x * y
 
 Sx = 0
 Sy = 1
@@ -264,26 +273,27 @@ computed, e.g., as mask(c) = 0 - c.
 
 ## Optimized Point Multiplication Algorithm
 
-This algorithm takes a scalar m and a point P which is a N torsion point and computes m*P.
+This algorithm takes a scalar m and a point P, which is a N torsion point, and computes [m]*P.
 It computes phi(P), psi(P), and
-psi(phi(P)), where phi and psi are endomorphisms and takes
-m*P=a_0*P+a_1*phi(P)+a_2*psi(P)+a_3*psi(phi(P)), where a_0, a_1,
-a_2, and a_3 have been computed as below. It is far more efficient then the above one.
+psi(phi(P)), where phi and psi are endomorphisms, and then computes
+[m]*P = [a_0]*P + [a_1]*phi(P) + [a_2]*psi(P) + [a_3]*psi(phi(P)), where a_0, a_1,
+a_2, and a_3 are computed as described below. This method is significantly more efficient 
+than the baseline point multiplication algorithm from above.
 In its description we make use of constants listed in an appendix.
 
 ### Alternative Point Representations and addition laws
 
 We use the following 3 representations of a point (x, y) on the
-curve. All representations use X, Y, Z satisfying x=X/Z, y=Y/Z. The
-point at infinity is (1,1,0). These representations differ in auxiliary
+curve. All representations use X, Y, Z satisfying x = X/Z, y = Y/Z. The
+point at infinity is (0,1,1). These representations differ in auxiliary
 data used to speed some operations. By omitting their computation when
 they are not needed we save operations. In three of these representations
 T=XY/Z is used to define them.
 
-R1 points are (X,Y,Z,Ta,Tb) where T=Ta*Tb. R2 points are
-(N, D, E, F)=(X+Y,Y-Z,2Z,2dT). R3 are (N, D, Z, T)=(X+Y,Y-X,Z,T), and R4 is (X,Y,Z).  A point
-doubling takes an R4 point, and produces an R1 point.  There are two
-kinds of addition: ADD_core eats an R2 and an R3 point and produces an
+Point representation R1 is given by (X,Y,Z,Ta,Tb), where T=Ta*Tb. Representation R2 is
+(N, D, E, F) = (X+Y,Y-Z,2Z,2dT). Representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T), and  
+representation R4 is (X,Y,Z).  A point doubling takes an R4 point and produces an R1 point.  
+There are two kinds of addition: ADD_core eats an R2 and an R3 point and produces an
 R1 point, and ADD eats an R1 and an R2 point, by converting the R1
 point into an R3 point and then proceeding. Exposing these two
 operations and the multiple representations helps save time in
@@ -336,13 +346,11 @@ return (X3, Y3, Z3, Ta3, Tb3)
 
 ### Endomorphisms and Isogenies
 
-Our endomorphisms and isogenies mostly work in projective coordinates. We present formulas for
-tau and tau_dual, and then for upsilon and chi. phi(Q)=tau_dual(upsilon(tau(Q)), where of course
-tau is performed first and similarly psi(Q)=tau_dual(chi(tau(Q))). tau_dual outputs points in R1,
-tau consumes affine points, and chi and upsilon input and output points in projective coordinates on a different curve.
+Endomorphisms are computed as phi(Q) = tau_dual(upsilon(tau(Q)) and psi(Q) = tau_dual(chi(tau(Q))). 
+Below, we present formulas for tau, tau_dual, upsilon and chi, which carry out computations in projective coordinates. 
 
 ~~~~
-tau(X1, Y1):
+tau(X1, Y1, Z1):
    A = X1^2
    B = Y1^2
    C = A+B
@@ -358,13 +366,13 @@ return(X2, Y2, Z2)
   A = X1^2
   B = Y1^2
   C = A+B
-  T2a = B-A
-  D = 2*Z1^2-Ta
-  T2b = ctaudual1*X1*Y1
-  X2 = T2b*C
-  Y2 = D*T2a
+  Ta2 = B-A
+  D = 2*Z1^2-Ta2
+  Tb2 = ctaudual1*X1*Y1
+  X2 = Tb2*C
+  Y2 = D*Ta2
   Z2 = D*C
-return(X2, Y2, Z2)
+return(X2, Y2, Z2, Ta2, Tb2)
 ~~~~
 
 ~~~~
@@ -403,8 +411,6 @@ chi(X1, Y1, Z1):
 return(X2, Y2, Z2)
 ~~~~
 
-
-
 ### Scalar Recoding
 
 Scalar recoding has two parts. The first is to decompose the scalar into four small integers, the second
@@ -416,9 +422,8 @@ vectors with integer coordinates b1, b2, b3, b4. These constants are
 64 bit. Then there are four constants l1, l2, l3, l4 which are long
 integers used to implement rounding.
 
-
-Let c=2b1-b2+5b3+2b4 and c'=2b1-b2+5b3+b4. Then compute ti=floor(li*m/2^256), and then compute
-a=(a1, a2, a3, a4)=(m,0,0,0)-t1*b1-t2*b2-t3*b3-t4*b4. Precisely one of a+c and a+c' has an odd first
+Let c = 2b1-b2+5b3+2b4 and c' = 2b1-b2+5b3+b4. Then compute ti = floor(li*m/2^256), and then compute
+a = (a1, a2, a3, a4) = (m,0,0,0) - t1*b1 - t2*b2 - t3*b3 - t4*b4. Precisely one of a+c and a+c' has an odd first
 coordinate: this is the one fed into the next scalar recoding step. Each entry is 64 bits after this
 calculation, and so the ti and m can be truncated to 64 bits.
 
@@ -442,51 +447,55 @@ d[64]=a2+2a3+4a
 
 ### Multiplication
 
-Next comes table initialization. Let Q=psi(P), R=phi(P), S=psi(phi(P)), all in R2, and take P in
-R3 form.
+Next comes table precomputation, which computes a table of 8 points in representation R2. 
+First, compute Q = psi(P), R = phi(P) and S = psi(phi(P)) in representation R1, as described before.
+Then, convert these points from R1 to R3. 
 
-T will be a table of 8 R2 format points.
+The 8 points in the table are generated using ADD_core as follows:
+
 T[0] is P in R2
-T[1] is P+Q
-T[2] is R+P
-T[3] is R+P+Q
-T[4] is S+P
-T[5] is S+P+Q
-T[6] is S+P+R
-T[7] is S+P+Q+R
+T[1] is T[0]+Q  (P+Q)
+Convert T[1] to R2
+T[2] is T[0]+R  (P+R)
+Convert T[2] to R2
+T[3] is T[1]+R  (P+Q+R)
+Convert T[3] to R2
+T[4] is T[0]+S  (P+S)  
+Convert T[4] to R2
+T[5] is T[1]+S  (P+Q+S)
+Convert T[5] to R2
+T[6] is T[2]+S  (P+R+S)
+Convert T[6] to R2
+T[7] is T[3]+S  (P+Q+R+S)
+Convert T[7] to R2
 
-By converting the table entries as soon as they are computed ADD_core can be used without need for
-extraneous arithmetic operations.
-
-Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then our multiplication algorithm is the following:
+Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then, the point multiplication algorithm is the following:
 
 ~~~~~
 
 Q = s[64]*T[d[64]] in R4
 for i=63 to 0 do:
-    Q=DBL(Q)
-    Q=ADD(Q, s[i]*T[di])
+    Q = DBL(Q)
+    Q = ADD(Q, s[i]*T[di])
 return Q
 
 ~~~~~
 
-We note that taking the inverse of a point is simply negating the y coordinate.
-This multiplication algorithm is only valid for N torsion points. It will produce the
-wrong answer for points that are not N torsion points, and in the process cause massive
-damage to security. Implementations MUST NOT use this algorithm on anything that is not
-a torsion point.
+This multiplication algorithm only works properly for N-torsion points. Implementations for Diffie-Hellman
+key exchange (and similar applications) MUST NOT use this algorithm on anything that is not a torsion point.  
+Otherwise, it will produce the wrong answer and can cause a reduction in the security. 
 
 # Use of the scalar multiplication primitive in Diffie-Hellman
 
 The above scalar multiplication primitive can be used to implement elliptic curve Diffie-Hellman
-with cofactor. To multiply by the cofactor of 392 requires nine doublings and two additions.
+with cofactor. The multiplication by the cofactor 392 requires nine doublings and two additions.
 
 ~~~
 DH(m, P):
-      Check P is on the curve: if not return failure
-      Q = 392*P
-      Compute m*Q with the multiplication algorithm
-return m*Q
+      Check that P is on the curve: if not return failure
+      Q = [392]*P
+      Compute [m]*Q with the multiplication algorithm
+return [m]*Q
 ~~~~
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared key:
@@ -511,16 +520,19 @@ FourQ defined over extension fields, which are considered less
 conservative then curves over prime fields. While the best attack for
 Diffie-Hellman on this curve remains generic, this may change.
 
-It is absolutely essential that points input to scalar multiplication
-algorithms are checked for being on the curve first. Removing such
-checks may result in revealing the entire scalar to an attacker. Implementations
-MUST check that the points are on the curve. The curve is not twist-secure: single
-coordinate ladders MUST NOT operate on the twist but MUST validate points before
-operating on them.
+[[COMMENT: I do not agree with the statement above ("there is considerable concern ...").
+This seems subjective, given that there is no evidence of a practical attack other
+than generic. The term "conservative" is also subjective and not backed by actual
+cryptanalysis research]]
+
+Implementations in the context of Diffie-Hellman (and similar applications) MUST check 
+that points input to scalar multiplication algorithms are on the curve. Removing such
+checks may result in revealing the entire scalar to an attacker. The curve is not twist-secure: 
+single coordinate ladders MUST validate points before operating on them.
 
 The arithmetic operations and table loads must be done in constant
-time to prevent timing attacks. Side-channel analysis is a constantly
-moving field, and implementors must be extremely careful.
+time to prevent timing and cache attacks. Side-channel analysis is a constantly
+moving field, and implementers must be extremely careful.
 
 --- back
 
