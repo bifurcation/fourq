@@ -273,10 +273,10 @@ computed, e.g., as mask(c) = 0 - c.
 
 ## Optimized Point Multiplication Algorithm
 
-This algorithm takes a scalar m and a point P, which is a N torsion point, and computes [m]*P.
+This algorithm takes a scalar m and a point P, which is a N torsion point, and computes [m]\*P.
 It computes phi(P), psi(P), and
 psi(phi(P)), where phi and psi are endomorphisms, and then computes
-[m]*P = [a_0]*P + [a_1]*phi(P) + [a_2]*psi(P) + [a_3]*psi(phi(P)), where a_0, a_1,
+[m]\*P = [a_0]\*P + [a_1]\*phi(P) + [a_2]\*psi(P) + [a_3]\*psi(phi(P)), where a_0, a_1,
 a_2, and a_3 are computed as described below. This method is significantly more efficient 
 than the baseline point multiplication algorithm from above.
 In its description we make use of constants listed in an appendix.
