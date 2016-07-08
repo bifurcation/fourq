@@ -422,8 +422,8 @@ vectors with integer coordinates b1, b2, b3, b4. These constants are
 64 bit. Then there are four constants l1, l2, l3, l4 which are long
 integers used to implement rounding.
 
-Let c = 2b1-b2+5b3+2b4 and c' = 2b1-b2+5b3+b4. Then compute ti = floor(li*m/2^256), and then compute
-a = (a1, a2, a3, a4) = (m,0,0,0) - t1*b1 - t2*b2 - t3*b3 - t4*b4. Precisely one of a+c and a+c' has an odd first
+Let c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 + b4. Then compute ti = floor(li\*m/2^256), and then compute
+a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 - t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
 coordinate: this is the one fed into the next scalar recoding step. Each entry is 64 bits after this
 calculation, and so the ti and m can be truncated to 64 bits.
 
@@ -453,7 +453,8 @@ Then, convert these points from R1 to R3.
 
 The 8 points in the table are generated using ADD_core as follows:
 
-T[0] is P in R2
+~~~~~
+T[0] is P in R2 
 T[1] is T[0]+Q  (P+Q)
 Convert T[1] to R2
 T[2] is T[0]+R  (P+R)
@@ -468,6 +469,8 @@ T[6] is T[2]+S  (P+R+S)
 Convert T[6] to R2
 T[7] is T[3]+S  (P+Q+R+S)
 Convert T[7] to R2
+~~~~~
+
 
 Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then, the point multiplication algorithm is the following:
 
@@ -482,8 +485,8 @@ return Q
 ~~~~~
 
 This multiplication algorithm only works properly for N-torsion points. Implementations for Diffie-Hellman
-key exchange (and similar applications) MUST NOT use this algorithm on anything that is not a torsion point.  
-Otherwise, it will produce the wrong answer and can cause a reduction in the security. 
+key exchange (and similar applications) MUST NOT use this algorithm on anything that is not a torsion point. 
+Otherwise, it will produce the wrong answer and can cause a reduction in security. 
 
 # Use of the scalar multiplication primitive in Diffie-Hellman
 
