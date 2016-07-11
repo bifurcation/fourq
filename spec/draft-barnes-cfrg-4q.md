@@ -72,14 +72,6 @@ Public key cryptography continues to be computationally expensive particularly o
 recent advances have substantially reduced the cost of elliptic curve operations, the use of endomorphisms enables
 even more speedups.
 
-## Comparison to prior X25519 / X448
-
-* Similar security level, also constant-time
-* Faster due to endomorphisms
-* More magic: potentially risky.
-
-# Four-dimensional decompositions
-
 As described in [Curve4Q], the elliptic curve described in this document is 
 the only known curve that permits a four dimensional decomposition over the 
 highly efficient field GF(p^2) with p = 2^127 - 1 while offering approximately 
@@ -97,7 +89,8 @@ equation:
 ~~~~~
 E: -x^2 + y^2 = 1 + d * x^2 * y^2, with
 
-d = 0x00000000000000e40000000000000142 + 0x5e472f846657e0fcb3821488f1fc0c8d * i
+d = 0x00000000000000e40000000000000142 +
+0x5e472f846657e0fcb3821488f1fc0c8d * i
 ~~~~~
 
 Let E(GF(p^2)) be the set of GF(p^2)-rational points lying on the curve equation E. 
@@ -112,8 +105,9 @@ N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 
 # Curve Points
 
-Elements a = (a0, a1, ... , a126)_2 in GF(p) are represented as 128-bit (16-octet) little-endian 
-integers by concatenating a || 0, i.e., elements of GF(p) are encoded as (a0, a1, ... , a126, 0)_2. 
+Elements a in GF(p) are represented as 16 byte little endian integers which are the numbers in the
+range [0, p). Because they are always less then p, they always have the top bit clear.
+
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation of the encodings 
 for x0 and x1.  Implementations will use whatever internal representation they desire, but we will 
 describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, where x0 and x1 are elements 
