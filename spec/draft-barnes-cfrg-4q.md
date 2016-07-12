@@ -70,7 +70,7 @@ performance is twice as good.
 
 Public key cryptography continues to be computationally expensive particularly on less powerful devices. While
 recent advances have substantially reduced the cost of elliptic curve operations, the use of endomorphisms enables
-even more speedups.
+even more speedups, as does using quadratic fields over smaller primes.
 
 As described in [Curve4Q], the elliptic curve described in this document is 
 the only known curve that permits a four dimensional decomposition over the 
@@ -134,7 +134,8 @@ Theorem: 1/a = a^(p - 2) = a^(2^127 - 3).
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
-represented by tuples of field elements (x, y).
+represented by tuples of field elements (x, y). The identity is represented
+as a point with x coordinate 0 and y coordinate 1.
 
 ~~~~~
 <CODE BEGINS>
@@ -169,7 +170,7 @@ def encodePoint(P):
 
 # The Curve4Q Function
 
-The Curve4Q function produces a 64-octet string from an input point P and a
+The Curve4Q function produces 64 output bytes from an input point P and a
 256-bit integer coefficient m.  The output of the Curve4Q function
 are the coordinates of the curve point [m]*P, encoded as described above.
 
@@ -282,10 +283,10 @@ curve. All representations use X, Y, Z satisfying x = X/Z, y = Y/Z. The
 point at infinity is (0,1,1). These representations differ in auxiliary
 data used to speed some operations. By omitting their computation when
 they are not needed we save operations. In three of these representations
-T=XY/Z is used to define them.
+the additional coordinate T=XY/Z is used to define them.
 
 Point representation R1 is given by (X,Y,Z,Ta,Tb), where T=Ta*Tb. Representation R2 is
-(N, D, E, F) = (X+Y,Y-Z,2Z,2dT). Representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T), and  
+(N, D, E, F) = (X+Y,Y-X,2Z,2dT). Representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T), and  
 representation R4 is (X,Y,Z).  A point doubling takes an R4 point and produces an R1 point.  
 There are two kinds of addition: ADD_core eats an R2 and an R3 point and produces an
 R1 point, and ADD eats an R1 and an R2 point, by converting the R1
@@ -478,9 +479,13 @@ return Q
 
 ~~~~~
 
-This multiplication algorithm only works properly for N-torsion points. Implementations for Diffie-Hellman
-key exchange (and similar applications) MUST NOT use this algorithm on anything that is not a torsion point. 
-Otherwise, it will produce the wrong answer and can cause a reduction in security. 
+To negate an R2 point (N,D, E, F) one computes (D, N, E ,-F). It is
+important to do this and the table lookup in constant time.  This
+multiplication algorithm only works properly for N-torsion
+points. Implementations for Diffie-Hellman key exchange (and similar
+applications) MUST NOT use this algorithm on anything that is not a
+torsion point.  Otherwise, it will produce the wrong answer, with
+consequences for security.
 
 # Use of the scalar multiplication primitive in Diffie-Hellman
 
@@ -491,7 +496,7 @@ with cofactor. The multiplication by the cofactor 392 requires nine doublings an
 DH(m, P):
       Check that P is on the curve: if not return failure
       Q = [392]*P
-      Compute [m]*Q with the multiplication algorithm
+      Compute [m]*Q with the optimized multiplication algorithm
 return [m]*Q
 ~~~~
 
@@ -502,7 +507,9 @@ KAB = DH(mA, B), while Bob computes KBA = DH(mB, A). The coordinates of G are
 found in the appendix. [[TODO: test vector and make this true]]
 
 It is possible to have an even more efficient fixed-base multiplication, either by storing
-the table that the above routine uses in memory, or via comb-based methods.
+the table that the above routine uses in memory, or via comb-based methods. Implementations
+MAY use any method to carry out these calculations, provided that they agree with the above
+function on all inputs and failure cases.
 
 # IANA Considerations
 
@@ -512,10 +519,9 @@ IANA need take no action.
 
 Claus Diem has steadily reduced the security of elliptic curves
 defined over extension fields of degree greater then two over large
-characteristic fields. There is considerable concern about curves like
-FourQ defined over extension fields, which are considered less
-conservative then curves over prime fields. While the best attack for
-Diffie-Hellman on this curve remains generic, this may change.
+characteristic fields. The best known attacks on quadratic extensions
+remain the generic algorithms for discrete logs, consuming on the order
+of 2^120 group operations to find a single discrete logarithm.
 
 [[COMMENT: I do not agree with the statement above ("there is considerable concern ...").
 This seems subjective, given that there is no evidence of a practical attack other
@@ -525,11 +531,14 @@ cryptanalysis research]]
 Implementations in the context of Diffie-Hellman (and similar applications) MUST check 
 that points input to scalar multiplication algorithms are on the curve. Removing such
 checks may result in revealing the entire scalar to an attacker. The curve is not twist-secure: 
-single coordinate ladders MUST validate points before operating on them.
+single coordinate ladders MUST validate points before operating on them. In the case
+of protocols that require contributory behavior when the identity is the output of the DH primitive
+it MUST be rejected and failure signaled to higher levels.
 
 The arithmetic operations and table loads must be done in constant
 time to prevent timing and cache attacks. Side-channel analysis is a constantly
-moving field, and implementers must be extremely careful.
+moving field, and implementers must be extremely careful to ensure that the operations
+used do in fact avoid leaking information.
 
 --- back
 
