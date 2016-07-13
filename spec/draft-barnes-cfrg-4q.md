@@ -25,49 +25,51 @@ author:
        email: watsonbladd@gmail.com
 
 informative:
-   EFD:
-      target: https://hyperelliptic.org/EFD/
-      title: Explicit-Formulas Database
+    EFD:
+      target: "https://hyperelliptic.org/EFD/"
+      title: "Explicit-Formulas Database"
       author:
         -
-                ins: D.J. Bernstein
+              ins: D.J. Bernstein
         -
-                ins: T. Lange
-   Curve4Q:
-      target: https://eprint.iacr.org/2015/565.pdf
+              ins: T. Lange
+ 
+    Curve4Q:
+      target: "https://eprint.iacr.org/2015/565.pdf"
       title: "FourQ:four-dimensional decompositions on a Q-curve over the Mersenne prime"
       author:
-        -
-                ins: C. Costello
-        -
-                ins: P. Longa
+         -
+              ins: C. Costello
+         -
+              ins: P. Longa
                 
-   TwistedRevisited:
-      target: http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
-      title: Twisted Edwards Curves Revisited
-      author:
-        -
-            ins: H. Hisil
-        -
-            ins: K.H.Wong
-        -
-            ins: G. Carter
-        -
-            ins: E. Dawson
+    TwistedRevisited:
+       target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
+       title: Twisted Edwards Curves Revisited
+       author:
+          -
+              ins: H. Hisil
+          -
+              ins: K.H.Wong
+          -
+              ins: G. Carter
+          -
+              ins: E. Dawson
+            
     Twisted:
-       target: http://iacr.org/archive/
+       target: "http://iacr.org/archive/"
        title: Twisted Edwards Curves
        author:
-         -
-                ins: D.J. Bernstein
-         -
-                ins: Peter Birkner
-         -
-                ins: Marc Joye
-         -
-                ins: Tanja Lange
-         -
-                ins: Christiane Peters
+          -
+              ins: D.J. Bernstein
+          -
+              ins: Peter Birkner
+          -
+              ins: Marc Joye
+          -
+              ins: Tanja Lange
+          -
+              ins: Christiane Peters
       
 --- abstract
 
