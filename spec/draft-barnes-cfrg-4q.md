@@ -521,7 +521,7 @@ found in the appendix. [[TODO: test vector and make this true]]
 It is possible to have an even more efficient fixed-base multiplication, either by storing
 the table that the above routine uses in memory, or via comb-based methods. Implementations
 MAY use any method to carry out these calculations, provided that they agree with the above
-function on all inputs and failure cases.
+function on all inputs and failure cases, and do not leak information about secret keys.
 
 # IANA Considerations
 
@@ -551,6 +551,10 @@ The arithmetic operations and table loads must be done in constant
 time to prevent timing and cache attacks. Side-channel analysis is a constantly
 moving field, and implementers must be extremely careful to ensure that the operations
 used do in fact avoid leaking information.
+
+#Acknowledgements
+
+We thank Patrick Longa for his invaluable comments and suggestions.
 
 --- back
 
