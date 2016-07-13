@@ -54,6 +54,20 @@ informative:
             ins: G. Carter
         -
             ins: E. Dawson
+    Twisted:
+       target: http://iacr.org/archive/
+       title: Twisted Edwards Curves
+       author:
+         -
+                ins: D.J. Bernstein
+         -
+                ins: Peter Birkner
+         -
+                ins: Marc Joye
+         -
+                ins: Tanja Lange
+         -
+                ins: Christiane Peters
       
 --- abstract
 
@@ -289,7 +303,8 @@ helps save time during table precomputation and the actual scalar multiplication
 between point representations is straightforward.
 
 The point operations above have the following explicit formulas developed by
-many people over the years ([EFD],[TwistedRevisted]). We present
+many people over the years, begining with Bernstein et al. in [Twisted] and continuing Hisil et al. in [Twisted Revisted].
+We have made some minor changes to variable choices, so these formulas do not appear directly in [EFD]. We present
 the operations as functions in pseudocode.
 
 [[NOTE: IMO we should directly credit the authors for their formulas. This includes Bernstein et al., 2008
