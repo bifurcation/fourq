@@ -42,9 +42,9 @@ informative:
         -
                 ins: P. Longa
                 
-   TwistedRevisted:
+   TwistedRevisited:
       target: http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
-      title: Twisted Edwards Curves Revisted
+      title: Twisted Edwards Curves Revisited
       author:
         -
             ins: H. Hisil
@@ -59,10 +59,10 @@ informative:
 
 This document specifies an elliptic curve over a quadratic extension
 of a prime field that offers the fastest known Diffie-Hellman key
-agreements while using compact keys. This high performance does not
-require vectorization and applies to signature verification. The best
-known attacks require 2^125 or so operations, comparable to X25519, while
-performance is twice as good.
+agreements while using compact keys. This high performance also extends
+to digital signature schemes. The best known attacks require 2^125 or so 
+operations, comparable to X25519, while performance is more than two
+times better.
 
 --- middle
 
@@ -180,9 +180,9 @@ Curve4Q(m, P) = encodeGFp2(MUL(m, P)[0])
 
 The function encodeGFp2 is defined above.  The MUL function represents scalar
 multiplication according to the group law of the curve.  We give two explicit
-algorithms for computing MUL below: a baseline algorithm that is short, simple,
-and slow, and an optimized algorithm that uses some precomputation to achieve
-significant speed benefits.
+algorithms for computing MUL below: a baseline algorithm that is short, simple
+and slow, and an optimized algorithm that uses endomorphisms and some precomputation 
+to achieve significant speed benefits.
 
 
 ## Baseline Point Multiplication Algorithm
@@ -201,19 +201,17 @@ Inputs:
 
 Pxy = x + y
 Pyx = y - x
-P2z = 2
 P2dt = 2 * d * x * y
 
 Sx = 0
 Sy = 1
-Sz = 1
 
 for t = 255 down to 0:
   m_t = (m >> t) & 1
+  
   // Constant-time selection; see below
   Axy = cselect(m_t, Pxy, 1)
   Ayx = cselect(m_t, Pyx, 1)
-  A2z = cselect(m_t, P2z, 2)
   A2dt = cselect(m_t, P2dt, 0)
 
   XX = Sx * Sx
@@ -236,7 +234,7 @@ for t = 255 down to 0:
 
   TAxy = Txy * Axy
   TAyx = Tyx * Ayx
-  TA2z = T2z * A2z
+  TAz = Tz + Tz
   TAt = Tt * A2dt
 
   H = TAz + TAt
@@ -268,7 +266,7 @@ computed, e.g., as mask(c) = 0 - c.
 
 ## Optimized Point Multiplication Algorithm
 
-This algorithm takes a scalar m and a point P, which is a N torsion point, and computes [m]\*P.
+This algorithm takes a scalar m and a point P, which is an N torsion point, and computes [m]\*P.
 It computes phi(P), psi(P), and
 psi(phi(P)), where phi and psi are endomorphisms, and then computes
 [m]\*P = [a_0]\*P + [a_1]\*phi(P) + [a_2]\*psi(P) + [a_3]\*psi(phi(P)), where a_0, a_1,
@@ -276,28 +274,26 @@ a_2, and a_3 are computed as described below. This method is significantly more 
 than the baseline point multiplication algorithm from above.
 In its description we make use of constants listed in an appendix.
 
-### Alternative Point Representations and addition laws
+### Alternative Point Representations and Addition Laws
 
-We use the following 3 representations of a point (x, y) on the
-curve. All representations use X, Y, Z satisfying x = X/Z, y = Y/Z. The
-point at infinity is (0,1,1). These representations differ in auxiliary
-data used to speed some operations. By omitting their computation when
-they are not needed we save operations. In three of these representations
-the additional coordinate T=XY/Z is used to define them.
+We use projective coordinates based on extended twisted Edwards coordinates [TwistedRevisited]:
+the projective tuple (X, Y, Z, T) with Z != 0 and T = X * Y/Z corresponds to a point (x, y)  
+satisfying x = X/Z and y = Y/Z. The point at infinity is (0,1,1). The following variants are used in 
+the optimized scalar multiplication algorithm in order to save computations: point representation 
+R1 is given by (X,Y,Z,Ta,Tb), where T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT); 
+representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation R4 is (X,Y,Z).  
+A point doubling (DBL) takes an R4 point and produces an R1 point. For addition, we first define ADD_core that takes 
+an R2 and R3 point and produces an R1 point. Then, a point addition (ADD), which takes an R1 and R2 point as inputs, 
+first converts the R1 point to R3 and then executes ADD_core. Exposing these operations and the multiple representations 
+helps save time during table precomputation and the actual scalar multiplication. Conversion
+between point representations is straightforward.
 
-Point representation R1 is given by (X,Y,Z,Ta,Tb), where T=Ta*Tb. Representation R2 is
-(N, D, E, F) = (X+Y,Y-X,2Z,2dT). Representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T), and  
-representation R4 is (X,Y,Z).  A point doubling takes an R4 point and produces an R1 point.  
-There are two kinds of addition: ADD_core eats an R2 and an R3 point and produces an
-R1 point, and ADD eats an R1 and an R2 point, by converting the R1
-point into an R3 point and then proceeding. Exposing these two
-operations and the multiple representations helps save time in
-precomputing tables and in using the tables effectively. The conversions
-between point formats are obvious.
-
-These operations have the following explicit formulas developed by
+The point operations above have the following explicit formulas developed by
 many people over the years ([EFD],[TwistedRevisted]). We present
 the operations as functions in pseudocode.
+
+[[NOTE: IMO we should directly credit the authors for their formulas. This includes Bernstein et al., 2008
+and Hisil et al., 2008, as far as I know.]]
 
 Doubling is computed as follows
 
@@ -306,15 +302,14 @@ DBL(X1, Y1, Z1):
   A = X1^2
   B = Y1^2
   C = 2*Z1^2
-  D = -1*A
-  E = (X1+Y1)^2-A-B
-  G = D+B
-  F = G-C
-  H = D-B
-  X3 = E*F
-  Y3 = G*H
+  D = A+B
+  E = (X1+Y1)^2-D
+  F = B-A
+  G = C-F
+  X3 = E*G
+  Y3 = D*F
   Ta3 = E
-  Tb3 = H
+  Tb3 = D
   Z3 = F*G
 return(X3, Y3, Z3, Ta3, Tb3)
 ~~~~
