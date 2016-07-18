@@ -162,16 +162,15 @@ Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
 Inversion of nonzero elements of GF(p) can be computed in constant-time using one exponentiation via Fermat's Little 
 Theorem: 1/a = a^(p - 2) = a^(2^127 - 3).
 
-Decompression requires the taking of square roots. To take the square
-root of c=a+b\*i, take a square root in GF(p) of a-b, and call it
-s. Let r=-b/2. Then call t and m the two roots of x^2-s\*x-b/2=0 over
-GF(p), and u, v the two roots of x^2+s\*x-b/2=0 over GF(p). The
-correct square root is among u-v\*i, u+v\*i, t-m\*i, or t+m\*i, and
-the other possible square root is simply its negation. Each equation
-can be solved via the quadratic formula, and if both have no solution,
-or a-b is not a square, there is no square root.
+Decompression requires the taking of square roots in GF(p^2). To
+compute the square root of A=a0+a1\*i, take the square root c of
+a0^2+a1^2 in GF(p). If there is no solution, there is no square
+root. Now compute t^2=(c+a0)/2, and u^2=(c-a0)/2, and the square root
+is t+u\*i or t-u\*i. One, two, or neither of these may be correct. If neither,
+then there is no square root. If one, the other square root is the negation of
+the answer, and if both, both square roots have been found.
 
-To compute a square root of a in GF(p), take a^((p-3)/4).
+To compute a square root of a in GF(p), take a^((p-3)/4) and check it for correctness. If incorrect a has no square root.
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
