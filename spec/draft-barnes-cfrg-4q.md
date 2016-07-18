@@ -25,43 +25,44 @@ author:
        email: watsonbladd@gmail.com
 
 informative:
-    EFD:
-      target: "https://hyperelliptic.org/EFD/"
-      title: "Explicit-Formulas Database"
-      author:
-        -
-              ins: D.J. Bernstein
-        -
-              ins: T. Lange
- 
+
     Curve4Q:
       target: "https://eprint.iacr.org/2015/565.pdf"
-      title: "FourQ:four-dimensional decompositions on a Q-curve over the Mersenne prime"
+      title: "FourQ: four-dimensional decompositions on a Q-curve over the Mersenne prime"
       author:
          -
-              ins: C. Costello
+              ins: Craig Costello
          -
-              ins: P. Longa
+              ins: Patrick Longa    
+              
+    FourQlib:
+      target: "https://www.microsoft.com/en-us/research/project/fourqlib/"
+      title: "FourQlib"
+      author:
+         -
+              ins: Craig Costello
+         -
+              ins: Patrick Longa
                 
     TwistedRevisited:
        target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
        title: Twisted Edwards Curves Revisited
        author:
           -
-              ins: H. Hisil
+              ins: Huseyin Hisil
           -
-              ins: K.H.Wong
+              ins: Kenneth Koon-Ho Wong
           -
-              ins: G. Carter
+              ins: Gary Carter
           -
-              ins: E. Dawson
+              ins: Ed Dawson
             
     Twisted:
-       target: "http://iacr.org/archive/"
+       target: "http://eprint.iacr.org/2008/013.pdf"
        title: Twisted Edwards Curves
        author:
           -
-              ins: D.J. Bernstein
+              ins: Daniel J. Bernstein
           -
               ins: Peter Birkner
           -
@@ -73,12 +74,11 @@ informative:
       
 --- abstract
 
-This document specifies an elliptic curve over a quadratic extension
-of a prime field that offers the fastest known Diffie-Hellman key
-agreements while using compact keys. This high performance also extends
-to digital signature schemes. The best known attacks require 2^125 or so 
-operations, comparable to X25519, while performance is more than two
-times better.
+This document specifies an elliptic curve defined over a quadratic extension
+of a prime field that offers the fastest known Diffie-Hellman key agreements while using compact keys.  
+Similar to Curve25519, this curve is intended to target the 128-bit security level, but offering 
+performance that is more than two times better.  This curve is uniquely determined by a list of properties 
+that are defined by clear performance and security goals.
 
 --- middle
 
@@ -86,12 +86,18 @@ times better.
 
 Public key cryptography continues to be computationally expensive particularly on less powerful devices. While
 recent advances have substantially reduced the cost of elliptic curve operations, the use of endomorphisms enables
-even more speedups, as does using quadratic fields over smaller primes.
+even more speedups, as does using quadratic fields over smaller primes.  This facilitates significant reductions in power 
+consumption as well as computing time.   
 
-As described in [Curve4Q], the elliptic curve described in this document is 
-the only known curve that permits a four dimensional decomposition over the 
-highly efficient field GF(p^2) with p = 2^127 - 1 while offering approximately 
-128 bits of security.
+This document specifies an elliptic curve ("Curve4Q"), proposed in [Curve4Q], that supports
+constant-time, exception-free scalar multiplications that are significantly faster and more power-efficient
+than any other available alternatives. As described in [Curve4Q], this elliptic curve is uniquely determined by specific 
+properties that are required to achieve top performance at a specific security level: Curve4Q is the only known curve that 
+permits a four dimensional decomposition over the highly efficient field GF(p^2) with p = 2^127 - 1 while offering close to 
+128 bits of security.  This "uniqueness" is an important feature, given the recent concerns about the provenance and generation 
+of the NIST curves. 
+
+This document also specifies how to perform Diffie-Hellman key agreements using this curve.
 
 # Mathematical Prerequisites
 
@@ -208,7 +214,7 @@ The function defined here represents a constant-time implementation of
 reference for implementers who might want a simpler implementation. The algorithm
 in the next section provides substantially greater performance.
 
-This code uses formulas from [TwistedRevisited].
+This code uses doubling and addition formulas from [TwistedRevisited].
 
 ~~~~~
 Inputs:
@@ -288,31 +294,31 @@ psi(phi(P)), where phi and psi are endomorphisms, and then computes
 [m]\*P = [a_0]\*P + [a_1]\*phi(P) + [a_2]\*psi(P) + [a_3]\*psi(phi(P)), where a_0, a_1,
 a_2, and a_3 are computed as described below. This method is significantly more efficient 
 than the baseline point multiplication algorithm from above.
-In its description we make use of constants listed in an appendix.
+In its description we make use of constants listed in the appendix.
+
+Next, we describe the different pieces that are necessary by the algorithm: point representations and explicit formulas,
+table precomputation, scalar decomposition and scalar recoding. Then, we describe how these are put together to
+compute the point multiplication.
 
 ### Alternative Point Representations and Addition Laws
 
 We use projective coordinates based on extended twisted Edwards coordinates [TwistedRevisited]:
-the projective tuple (X, Y, Z, T) with Z != 0 and T = X * Y/Z corresponds to a point (x, y)  
-satisfying x = X/Z and y = Y/Z. The point at infinity is (0,1,1). The following variants are used in 
+the projective tuple (X, Y, Z, T) with Z != 0 and T = X * Y/Z corresponds to a point (x, y) satisfying x = X/Z 
+and y = Y/Z. The point at infinity is (0,1,1). The following variants are used in 
 the optimized scalar multiplication algorithm in order to save computations: point representation 
 R1 is given by (X,Y,Z,Ta,Tb), where T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT); 
-representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation R4 is (X,Y,Z).  
+representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation R4 is (X,Y,Z).
+
 A point doubling (DBL) takes an R4 point and produces an R1 point. For addition, we first define ADD_core that takes 
 an R2 and R3 point and produces an R1 point. Then, a point addition (ADD), which takes an R1 and R2 point as inputs, 
 first converts the R1 point to R3 and then executes ADD_core. Exposing these operations and the multiple representations 
-helps save time during table precomputation and the actual scalar multiplication. Conversion
+helps save time during table precomputation and the actual point multiplication. Conversion
 between point representations is straightforward.
 
-The point operations above have the following explicit formulas developed by
-many people over the years, begining with Bernstein et al. in [Twisted] and continuing Hisil et al. in [Twisted Revisted].
-We have made some minor changes to variable choices, so these formulas do not appear directly in [EFD]. We present
-the operations as functions in pseudocode.
+Below, we list the explicit formulas for the required point operations.  These formulas were adapted 
+from [Twisted] and [Twisted Revisted]. 
 
-[[NOTE: IMO we should directly credit the authors for their formulas. This includes Bernstein et al., 2008
-and Hisil et al., 2008, as far as I know.]]
-
-Doubling is computed as follows
+Doubling is computed as follows:
 
 ~~~~
 DBL(X1, Y1, Z1):
@@ -355,6 +361,7 @@ return (X3, Y3, Z3, Ta3, Tb3)
 
 Endomorphisms are computed as phi(Q) = tau_dual(upsilon(tau(Q)) and psi(Q) = tau_dual(chi(tau(Q))). 
 Below, we present formulas for tau, tau_dual, upsilon and chi, which carry out computations in projective coordinates. 
+These formulas were adapted from [FourQlib].
 
 ~~~~
 tau(X1, Y1, Z1):
@@ -418,9 +425,35 @@ chi(X1, Y1, Z1):
 return(X2, Y2, Z2)
 ~~~~
 
-### Scalar Recoding
+### Table Precomputation
 
-Scalar recoding has two parts. The first is to decompose the scalar into four small integers, the second
+This stage consists of computing a table of 8 points in representation R2. 
+First, compute Q = psi(P), R = phi(P) and S = psi(phi(P)) in representation R1 using the formulas from the previous
+section. Then, convert these points from R1 to R3. 
+
+The 8 points in the table are generated using ADD_core as follows:
+
+~~~~~
+T[0] is P in R2 
+T[1] is T[0]+Q  (P+Q)
+Convert T[1] to R2
+T[2] is T[0]+R  (P+R)
+Convert T[2] to R2
+T[3] is T[1]+R  (P+Q+R)
+Convert T[3] to R2
+T[4] is T[0]+S  (P+S)  
+Convert T[4] to R2
+T[5] is T[1]+S  (P+Q+S)
+Convert T[5] to R2
+T[6] is T[2]+S  (P+R+S)
+Convert T[6] to R2
+T[7] is T[3]+S  (P+Q+R+S)
+Convert T[7] to R2
+~~~~~
+
+### Scalar Decomposition and Recoding
+
+This stage has two parts. The first is to decompose the scalar into four small integers, the second
 is to encode these integers into an equivalent form satisfying certain properties, which will be what is used
 by the multiplication algorithm.
 
@@ -452,34 +485,13 @@ for i=0 to 63 do
 d[64]=a2+2a3+4a
 ~~~~~
 
-### Multiplication
+### Point Multiplication
 
-Next comes table precomputation, which computes a table of 8 points in representation R2. 
-First, compute Q = psi(P), R = phi(P) and S = psi(phi(P)) in representation R1, as described before.
-Then, convert these points from R1 to R3. 
+We now describe the full algorithm for computing point multiplication. On inputs m and P, the algorithm consists of computing the 
+precomputed table T with 8 points (see "Table Precomputation") and carry out the scalar decomposition and scalar recoding 
+to produce the two arrays m[0]..m[64] and d[0]..d[64\] (see "Scalar Decomposition and Recoding"). 
 
-The 8 points in the table are generated using ADD_core as follows:
-
-~~~~~
-T[0] is P in R2 
-T[1] is T[0]+Q  (P+Q)
-Convert T[1] to R2
-T[2] is T[0]+R  (P+R)
-Convert T[2] to R2
-T[3] is T[1]+R  (P+Q+R)
-Convert T[3] to R2
-T[4] is T[0]+S  (P+S)  
-Convert T[4] to R2
-T[5] is T[1]+S  (P+Q+S)
-Convert T[5] to R2
-T[6] is T[2]+S  (P+R+S)
-Convert T[6] to R2
-T[7] is T[3]+S  (P+Q+R+S)
-Convert T[7] to R2
-~~~~~
-
-
-Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then, the point multiplication algorithm is the following:
+Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0.  The main loop of the point multiplication algorithm is the following:
 
 ~~~~~
 
@@ -491,18 +503,21 @@ return Q
 
 ~~~~~
 
-To negate an R2 point (N,D, E, F) one computes (D, N, E ,-F). It is
-important to do this and the table lookup in constant time.  This
-multiplication algorithm only works properly for N-torsion
+Negation of a point can be required after fetching an R2 point from the table T. To negate an R2 point (N, D, E, F) 
+one computes (D, N, E ,-F). It is important to do this (as well as the table lookup) in constant time.  
+
+The multiplication algorithm above only works properly for N-torsion
 points. Implementations for Diffie-Hellman key exchange (and similar
 applications) MUST NOT use this algorithm on anything that is not a
 torsion point.  Otherwise, it will produce the wrong answer, with
 consequences for security.
 
-# Use of the scalar multiplication primitive in Diffie-Hellman
+# Use of the scalar multiplication primitive for Diffie-Hellman Key Agreement
 
 The above scalar multiplication primitive can be used to implement elliptic curve Diffie-Hellman
-with cofactor. The multiplication by the cofactor 392 requires nine doublings and two additions.
+with cofactor.  Note that the multiplication by the cofactor 392 does not need to be computed in
+constant time and, hence, it only requires nine doublings and two additions (i.e., one uses the binary 
+representation of 392 and computes a double-and-add point multiplication scanning bits from left to right).
 
 ~~~
 DH(m, P):
@@ -513,15 +528,19 @@ return [m]*Q
 ~~~~
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared key:
-Both pick a random string of 32 bytes, mA and mB respectively. Alice computes
-A = DH(mA, G), Bob B = DH(mB, G). They exchange A and B, and then Alice computes
-KAB = DH(mA, B), while Bob computes KBA = DH(mB, A). The coordinates of G are
-found in the appendix. [[TODO: test vector and make this true]]
+both pick a random string of 32 bytes, mA and mB respectively.  Alice computes the public key
+A = DH(mA, G), and Bob computes the public key B = DH(mB, G).  They exchange A and B, and then Alice computes
+KAB = DH(mA, B) while Bob computes KBA = DH(mB, A), which produces K = KAB = KBA.  Alice and Bob can then use a key-derivation 
+function using K, A and B to derive a symmetric key. The coordinates of the generator G are
+given in the appendix. [[TODO: test vector and make this true]]
 
-It is possible to have an even more efficient fixed-base multiplication, either by storing
-the table that the above routine uses in memory, or via comb-based methods. Implementations
-MAY use any method to carry out these calculations, provided that they agree with the above
-function on all inputs and failure cases, and do not leak information about secret keys.
+The computations above can be directly carried out using the optimized point multiplication algorithm.
+However, it is possible to do even better for the case in which a truly ephemeral Diffie-Hellman key agreement is
+required (i.e., when fresh public keys are generated per agreement.  Note that this feature provides perfect forward secrecy and improves significantly the practical security against side-channel attacks).  Ephemeral public keys can be computed
+using fixed-base multiplications via comb-based methods, which improve performance significantly at the expense of storing
+a precomputed table.  Implementations MAY use any method to carry out these calculations, provided that it agrees with the above
+function on all inputs and failure cases, and does not leak information about secret keys.  For an example, refer to the 
+constant-time fixed-base multiplication algorithm implemented in [FourQlib].
 
 # IANA Considerations
 
@@ -534,11 +553,6 @@ defined over extension fields of degree greater then two over large
 characteristic fields. The best known attacks on quadratic extensions
 remain the generic algorithms for discrete logs, consuming on the order
 of 2^120 group operations to find a single discrete logarithm.
-
-[[COMMENT: I do not agree with the statement above ("there is considerable concern ...").
-This seems subjective, given that there is no evidence of a practical attack other
-than generic. The term "conservative" is also subjective and not backed by actual
-cryptanalysis research]]
 
 Implementations in the context of Diffie-Hellman (and similar applications) MUST check 
 that points input to scalar multiplication algorithms are on the curve. Removing such
