@@ -143,9 +143,9 @@ for x0 and x1, that is 32 bytes.  Implementations will use whatever internal rep
 describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, where x0 and x1 are elements 
 of GF(p).
 
-Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is serialized as a 512-bit (64-octet) 
-sequence, which consists of the 32 byte encoding of x = x0 + x1\*i followed by the 
-32-byte encoding of y = y0 + y1\*i. Below we have a diagram of the bits.
+Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is serialized in a compressed form
+as the representation of y followed by a single byte: 0 if the lexographically smaller of the two x
+coordinates is the right one, 1 if not.
 
 ~~~~~
 |--------------- x ---------------|--------------- y ---------------|
@@ -160,13 +160,25 @@ Squaring A^2 is computed as (a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is
 Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
 
 Inversion of nonzero elements of GF(p) can be computed in constant-time using one exponentiation via Fermat's Little 
-Theorem: 1/a = a^(p - 2) = a^(2^127 - 3). 
+Theorem: 1/a = a^(p - 2) = a^(2^127 - 3).
+
+Decompression requires the taking of square roots. To take the square
+root of c=a+b\*i, take a square root in GF(p) of a-b, and call it
+s. Let r=-b/2. Then call t and m the two roots of x^2-s\*x-b/2=0 over
+GF(p), and u, v the two roots of x^2+s\*x-b/2=0 over GF(p). The
+correct square root is among u-v\*i, u+v\*i, t-m\*i, or t+m\*i, and
+the other possible square root is simply its negation. Each equation
+can be solved via the quadratic formula, and if both have no solution,
+or a-b is not a square, there is no square root.
+
+To compute a square root of a in GF(p), take a^((p-3)/4).
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
 represented by tuples of field elements (x, y). The identity is represented
 as a point with x coordinate 0 and y coordinate 1.
 
+[[TODO: Change this code to use compressed points]]
 ~~~~~
 <CODE BEGINS>
 def decodeLittleEndian(b, bits):
@@ -510,9 +522,11 @@ return Q
 
 ~~~~~
 
-Negation of a point can be required after fetching an R2 point from the table T. To negate an R2 point (N, D, E, F) 
-one computes (D, N, E ,-F). It is important to do this (as well as the table lookup) in constant time, and without differences
-in the patterns of memory accesses.
+Negation of a point can be required after fetching an R2 point from
+the table T. To negate an R2 point (N, D, E, F) one computes (D, N, E
+,-F). It is important to do this (as well as the table lookup) in
+constant time, and without differences in the patterns of memory
+accesses depending on which values are used.
 
 The multiplication algorithm above only works properly for N-torsion
 points. Implementations for Diffie-Hellman key exchange (and similar
@@ -541,10 +555,8 @@ a shared key: both pick a random string of 32 bytes, mA and mB
 respectively. Alice computes the public key A = DH(mA, G), and Bob
 computes the public key B = DH(mB, G).  They exchange A and B, and
 then Alice computes KAB = DH(mA, B) while Bob computes KBA = DH(mB,
-A), which produces K = KAB = KBA.  Alice and Bob can then use a
-key-derivation function using K, A and B to derive a symmetric
-key. The coordinates of the generator G are given in the
-appendix. [[TODO: test vector and make this true]]
+A), which produces K = KAB = KBA.  The first 32 bytes of this shared secret
+are the key that has been derived. The x coordinate is not used.
 
 The computations above can be directly carried out using the optimized
 point multiplication algorithm. Public keys can be computed using
