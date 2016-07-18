@@ -74,30 +74,33 @@ informative:
       
 --- abstract
 
-This document specifies an elliptic curve defined over a quadratic extension
-of a prime field that offers the fastest known Diffie-Hellman key agreements while using compact keys.  
-Similar to Curve25519, this curve is intended to target the 128-bit security level, but offering 
-performance that is more than two times better.  This curve is uniquely determined by a list of properties 
-that are defined by clear performance and security goals.
+This document specifies an Edwards curve defined over a quadratic
+extension of a prime field that offers the fastest known
+Diffie-Hellman key agreements with 128 bit security.  It is two times
+faster then Curve25519, and when not using endomorphisms 1.2 percent
+faster.  This curve is the only known curve satisfying list of properties
+motivated by clear performance and security goals.
 
 --- middle
 
 # Introduction
 
-Public key cryptography continues to be computationally expensive particularly on less powerful devices. While
-recent advances have substantially reduced the cost of elliptic curve operations, the use of endomorphisms enables
-even more speedups, as does using quadratic fields over smaller primes.  This facilitates significant reductions in power 
-consumption as well as computing time.   
+Public key cryptography continues to be computationally expensive
+particularly on less powerful devices. While recent advances in
+efficient formulas for addition and doubling have substantially
+reduced the cost of elliptic curve operations, the use of
+endomorphisms enables even more speedups, as does using quadratic
+fields over smaller primes.  This facilitates significant reductions
+in power consumption as well as computing time.
 
-This document specifies an elliptic curve ("Curve4Q"), proposed in [Curve4Q], that supports
+This document specifies an Edwards curve ("Curve4Q"), proposed in [Curve4Q], that supports
 constant-time, exception-free scalar multiplications that are significantly faster and more power-efficient
-than any other available alternatives. As described in [Curve4Q], this elliptic curve is uniquely determined by specific 
+than any other available alternatives. As described in [Curve4Q], this curve is uniquely determined by specific 
 properties that are required to achieve top performance at a specific security level: Curve4Q is the only known curve that 
 permits a four dimensional decomposition over the highly efficient field GF(p^2) with p = 2^127 - 1 while offering close to 
-128 bits of security.  This "uniqueness" is an important feature, given the recent concerns about the provenance and generation 
-of the NIST curves. 
+128 bits of security.  This "uniqueness" allays concerns about selecting curves vulnerable to as of yet unknown attacks.
 
-This document also specifies how to perform Diffie-Hellman key agreements using this curve.
+This document also specifies how to perform Diffie-Hellman key agreement using this curve.
 
 # Mathematical Prerequisites
 
@@ -105,7 +108,7 @@ Curve4Q is defined over the finite field GF(p^2), where p is the Mersenne prime
 2^127 - 1.  Elements of this finite field have the form (a + b * i), where a and
 b are elements of the finite field GF(p) (i.e., integers mod p) and i^2 = -1.
 
-Curve4Q is the twisted Edwards curve over GF(p^2) defined by the following curve
+Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the following curve
 equation:
 
 ~~~~~
@@ -115,7 +118,7 @@ d = 0x00000000000000e40000000000000142 +
 0x5e472f846657e0fcb3821488f1fc0c8d * i
 ~~~~~
 
-Let E(GF(p^2)) be the set of GF(p^2)-rational points lying on the curve equation E. 
+Let E(GF(p^2)) be the set of GF(p^2)-rational points on E. 
 This set forms an abelian group for which (0,1) is the neutral element and the inverse 
 of a point (x, y) is given by (-x, y). The order of this group is \#E = 2^3 · 7^2 · N, 
 where N is the following 246-bit prime:
@@ -124,20 +127,25 @@ where N is the following 246-bit prime:
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
+This group is isomorphic to the Jacobian of points on the isogenous elliptic curve as explained
+in [FourQ]. It posseses efficiently computable endomorphisms as a result of the elliptic curve being
+isogenous to its Galois conjugate, as well as having complex multiplication. As a result it is possible
+to simultaneously apply the decompositions of scalars due to  [GLV, GLS]
 
 # Curve Points
 
 Elements a in GF(p) are represented as 16 byte little endian integers which are the numbers in the
-range [0, p). Because they are always less then p, they always have the top bit clear.
+range [0, p). Because they are always less then p, they always have the top bit clear. The 16 bytes
+b[0], b[1],... b[15] represent b[0]+256*b[1]+256^2*b[2]+...+256^15*b[16].
 
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation of the encodings 
-for x0 and x1.  Implementations will use whatever internal representation they desire, but we will 
+for x0 and x1, that is 32 bytes.  Implementations will use whatever internal representation they desire, but we will 
 describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, where x0 and x1 are elements 
 of GF(p).
 
 Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is serialized as a 512-bit (64-octet) 
-sequence, which consists of the concatenation of the 256-bit encoding of x = x0 + x1\*i followed by the 
-256-bit encoding of y = y0 + y1\*i.
+sequence, which consists of the 32 byte encoding of x = x0 + x1\*i followed by the 
+32-byte encoding of y = y0 + y1\*i. Below we have a diagram of the bits.
 
 ~~~~~
 |--------------- x ---------------|--------------- y ---------------|
@@ -151,7 +159,7 @@ A\*B = (a0\*b0-a1\*b1) + (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1
 Squaring A^2 is computed as (a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is computed as a0/(a0^2+a1^2) - i\*a1/(a0^2+a1^2). 
 Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
 
-Inversion of field elements can be computed in constant-time using one exponentiation via Fermat's Little 
+Inversion of nonzero elements of GF(p) can be computed in constant-time using one exponentiation via Fermat's Little 
 Theorem: 1/a = a^(p - 2) = a^(2^127 - 3). 
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
@@ -209,7 +217,7 @@ to achieve significant speed benefits.
 
 ## Baseline Point Multiplication Algorithm
 
-The function defined here represents a constant-time implementation of
+The procedure presented here represents a constant-time implementation of
 "textbook" scalar multiplication on the curve.  It is presented mainly as a
 reference for implementers who might want a simpler implementation. The algorithm
 in the next section provides substantially greater performance.
@@ -277,14 +285,8 @@ Return (Sx, Sy)
 
 The cselect function returns its second or third argument depending on whether
 the first argument is one or zero, respectively.  This function SHOULD be
-implemented in constant time.  For example, this can be done as follows:
-
-~~~~~
-cselect(c, x, y) = ((x ^ y) & mask(c)) ^ y
-~~~~~
-
-Where mask(c) is the all-1 or all-0 word of the same length as x and y,
-computed, e.g., as mask(c) = 0 - c.
+implemented in constant time via translation into boolean operations applied
+to each word of x and y.
 
 ## Optimized Point Multiplication Algorithm
 
@@ -296,23 +298,26 @@ a_2, and a_3 are computed as described below. This method is significantly more 
 than the baseline point multiplication algorithm from above.
 In its description we make use of constants listed in the appendix.
 
-Next, we describe the different pieces that are necessary by the algorithm: point representations and explicit formulas,
-table precomputation, scalar decomposition and scalar recoding. Then, we describe how these are put together to
+We describe the different pieces that are necessary by the algorithm: point representations and explicit formulas,
+table precomputation, scalar decomposition and scalar recoding. We then describe how these are put together to
 compute the point multiplication.
 
 ### Alternative Point Representations and Addition Laws
 
-We use projective coordinates based on extended twisted Edwards coordinates [TwistedRevisited]:
-the projective tuple (X, Y, Z, T) with Z != 0 and T = X * Y/Z corresponds to a point (x, y) satisfying x = X/Z 
-and y = Y/Z. The point at infinity is (0,1,1). The following variants are used in 
-the optimized scalar multiplication algorithm in order to save computations: point representation 
-R1 is given by (X,Y,Z,Ta,Tb), where T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT); 
-representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation R4 is (X,Y,Z).
+We use coordinates based on extended twisted Edwards coordinates
+[TwistedRevisited]: the projective tuple (X, Y, Z, T) with Z != 0 and
+T = X * Y/Z corresponds to a point (x, y) satisfying x = X/Z and y =
+Y/Z. The point at infinity is (0,1,1). The following variants are used
+in the optimized scalar multiplication algorithm in order to save
+computations: point representation R1 is given by (X,Y,Z,Ta,Tb), where
+T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
+representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
+R4 is (X,Y,Z).
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For addition, we first define ADD_core that takes 
 an R2 and R3 point and produces an R1 point. Then, a point addition (ADD), which takes an R1 and R2 point as inputs, 
-first converts the R1 point to R3 and then executes ADD_core. Exposing these operations and the multiple representations 
-helps save time during table precomputation and the actual point multiplication. Conversion
+converts the R1 point to R3, and then executes ADD_core. Exposing these operations and the multiple representations 
+helps save time during table precomputation and the actual point multiplication by avoiding redundant computations. Conversion
 between point representations is straightforward.
 
 Below, we list the explicit formulas for the required point operations.  These formulas were adapted 
@@ -360,8 +365,10 @@ return (X3, Y3, Z3, Ta3, Tb3)
 ### Endomorphisms and Isogenies
 
 Endomorphisms are computed as phi(Q) = tau_dual(upsilon(tau(Q)) and psi(Q) = tau_dual(chi(tau(Q))). 
-Below, we present formulas for tau, tau_dual, upsilon and chi, which carry out computations in projective coordinates. 
-These formulas were adapted from [FourQlib].
+Below, we present procedures for tau, tau_dual, upsilon and chi, adapted from [FourQlib]. Tau_dual produces
+an R1 point, while the other proceedures produce projective coordinates. Nota Bene: tau produces points
+on a different curve, while upsilon and chi are endomorphisms on that different curve. As a result the
+intermediate results do not satisfy the equations of the curve E.
 
 ~~~~
 tau(X1, Y1, Z1):
@@ -429,7 +436,7 @@ return(X2, Y2, Z2)
 
 This stage consists of computing a table of 8 points in representation R2. 
 First, compute Q = psi(P), R = phi(P) and S = psi(phi(P)) in representation R1 using the formulas from the previous
-section. Then, convert these points from R1 to R3. 
+section. Then, convert these points from R1 to R3 in preperation for the next step.
 
 The 8 points in the table are generated using ADD_core as follows:
 
@@ -487,8 +494,8 @@ d[64]=a2+2a3+4a
 
 ### Point Multiplication
 
-We now describe the full algorithm for computing point multiplication. On inputs m and P, the algorithm consists of computing the 
-precomputed table T with 8 points (see "Table Precomputation") and carry out the scalar decomposition and scalar recoding 
+We now describe the full algorithm for computing point multiplication. On inputs m and P, the algorithm first computes the 
+precomputed table T with 8 points (see "Table Precomputation") and then carries out the scalar decomposition and scalar recoding 
 to produce the two arrays m[0]..m[64] and d[0]..d[64\] (see "Scalar Decomposition and Recoding"). 
 
 Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0.  The main loop of the point multiplication algorithm is the following:
@@ -504,43 +511,50 @@ return Q
 ~~~~~
 
 Negation of a point can be required after fetching an R2 point from the table T. To negate an R2 point (N, D, E, F) 
-one computes (D, N, E ,-F). It is important to do this (as well as the table lookup) in constant time.  
+one computes (D, N, E ,-F). It is important to do this (as well as the table lookup) in constant time, and without differences
+in the patterns of memory accesses.
 
 The multiplication algorithm above only works properly for N-torsion
 points. Implementations for Diffie-Hellman key exchange (and similar
-applications) MUST NOT use this algorithm on anything that is not a
+applications) MUST NOT use this algorithm on anything that is not an N-
 torsion point.  Otherwise, it will produce the wrong answer, with
-consequences for security.
+extremely negative consequences for security.
 
 # Use of the scalar multiplication primitive for Diffie-Hellman Key Agreement
 
-The above scalar multiplication primitive can be used to implement elliptic curve Diffie-Hellman
+The above scalar multiplication primitive can be used to implement Diffie-Hellman
 with cofactor.  Note that the multiplication by the cofactor 392 does not need to be computed in
 constant time and, hence, it only requires nine doublings and two additions (i.e., one uses the binary 
 representation of 392 and computes a double-and-add point multiplication scanning bits from left to right).
+It MUST NOT be computed with the optimized algorithm above, as P is not known to be a torsion point.
 
 ~~~
 DH(m, P):
       Check that P is on the curve: if not return failure
       Q = [392]*P
-      Compute [m]*Q with the optimized multiplication algorithm
+      Compute [m]*Q with the optimized multiplication algorithm or any other
 return [m]*Q
 ~~~~
 
-Two users, Alice and Bob, can carry out the following steps to derive a shared key:
-both pick a random string of 32 bytes, mA and mB respectively.  Alice computes the public key
-A = DH(mA, G), and Bob computes the public key B = DH(mB, G).  They exchange A and B, and then Alice computes
-KAB = DH(mA, B) while Bob computes KBA = DH(mB, A), which produces K = KAB = KBA.  Alice and Bob can then use a key-derivation 
-function using K, A and B to derive a symmetric key. The coordinates of the generator G are
-given in the appendix. [[TODO: test vector and make this true]]
+Two users, Alice and Bob, can carry out the following steps to derive
+a shared key: both pick a random string of 32 bytes, mA and mB
+respectively. Alice computes the public key A = DH(mA, G), and Bob
+computes the public key B = DH(mB, G).  They exchange A and B, and
+then Alice computes KAB = DH(mA, B) while Bob computes KBA = DH(mB,
+A), which produces K = KAB = KBA.  Alice and Bob can then use a
+key-derivation function using K, A and B to derive a symmetric
+key. The coordinates of the generator G are given in the
+appendix. [[TODO: test vector and make this true]]
 
-The computations above can be directly carried out using the optimized point multiplication algorithm.
-However, it is possible to do even better for the case in which a truly ephemeral Diffie-Hellman key agreement is
-required (i.e., when fresh public keys are generated per agreement.  Note that this feature provides perfect forward secrecy and improves significantly the practical security against side-channel attacks).  Ephemeral public keys can be computed
-using fixed-base multiplications via comb-based methods, which improve performance significantly at the expense of storing
-a precomputed table.  Implementations MAY use any method to carry out these calculations, provided that it agrees with the above
-function on all inputs and failure cases, and does not leak information about secret keys.  For an example, refer to the 
-constant-time fixed-base multiplication algorithm implemented in [FourQlib].
+The computations above can be directly carried out using the optimized
+point multiplication algorithm. Public keys can be computed using
+fixed-base multiplications via comb-based methods, which improve
+performance significantly at the expense of storing a precomputed
+table.  Implementations MAY use any method to carry out these
+calculations, provided that it agrees with the above function on all
+inputs and failure cases, and does not leak information about secret
+keys.  For an example, refer to the constant-time fixed-base
+multiplication algorithm implemented in [FourQlib].
 
 # IANA Considerations
 
@@ -550,21 +564,32 @@ IANA need take no action.
 
 Claus Diem has steadily reduced the security of elliptic curves
 defined over extension fields of degree greater then two over large
-characteristic fields. The best known attacks on quadratic extensions
-remain the generic algorithms for discrete logs, consuming on the order
-of 2^120 group operations to find a single discrete logarithm.
+characteristic fields, however the best known attacks on elliptic
+curves over quadratic extensions remain the generic algorithms for
+discrete logs, consuming on the order of 2^120 group operations to
+find a single discrete logarithm.
 
-Implementations in the context of Diffie-Hellman (and similar applications) MUST check 
-that points input to scalar multiplication algorithms are on the curve. Removing such
-checks may result in revealing the entire scalar to an attacker. The curve is not twist-secure: 
-single coordinate ladders MUST validate points before operating on them. In the case
-of protocols that require contributory behavior when the identity is the output of the DH primitive
-it MUST be rejected and failure signaled to higher levels.
+Implementations in the context of Diffie-Hellman (and similar
+applications) MUST check that points input to scalar multiplication
+algorithms are on the curve. Removing such checks may result in
+revealing the entire scalar to an attacker. The curve is not
+twist-secure: implementations using single coordinate ladders MUST
+validate points before operating on them. In the case of protocols
+that require contributory behavior when the identity is the output of
+the DH primitive it MUST be rejected and failure signaled to higher
+levels.
 
 The arithmetic operations and table loads must be done in constant
-time to prevent timing and cache attacks. Side-channel analysis is a constantly
-moving field, and implementers must be extremely careful to ensure that the operations
-used do in fact avoid leaking information.
+time to prevent timing and cache attacks. Side-channel analysis is a
+constantly moving field, and implementers must be extremely careful to
+ensure that the operations used do in fact avoid leaking information.
+
+If private scalars are not reused in the Diffie-Hellman protocol, the
+security against side channel attacks is increased. Protocols which
+require contributory behavior such as TLS 1.2 and certain other
+protocols MUST check that the computed shared secret is not the
+identity, and if it is MUST signal failure.
+
 
 #Acknowledgements
 
