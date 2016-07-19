@@ -43,6 +43,26 @@ informative:
               ins: Craig Costello
          -
               ins: Patrick Longa
+    GLV:
+       target: "https://www.iacr.org/archive/crypto2001/21390189.pdf"
+       title: "Faster Point Multiplication on Elliptic Curves with Efficient Endomorphisms"
+       author:
+          -
+             ins: Robert P. Gallant
+          -
+             ins: Robert J. Lambert
+          -
+             ins: Scott A. Vanstone
+    GLS:
+        target: "https://www.iacr.org/archive/eurocrypt2009/54790519/54790519.pdf"
+        title: "Endomorphisms for Faster Elliptic Curve Cryptograpjy on a Large Class of Curves"
+        author:
+           -
+             ins: Steven D. Galbraith
+           -
+             ins: Xibin Lin
+           -
+             ins: Michael Scott
                 
     TwistedRevisited:
        target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
@@ -111,15 +131,15 @@ Public key cryptography continues to be computationally expensive
 particularly on less powerful devices. While recent advances in
 efficient formulas for addition and doubling have substantially
 reduced the cost of elliptic curve operations in terms of field
-operations, the number of the group operations has not been reduced in
-the curves considered for IETF use. Using curves with endomorphisms
-reduces the number of group operations by enabling scalars to be
-recoded in shorter forms. By using curves over quadratic extensions
-there are more endomorphism families to pick from, and the field
-operations become more efficient. The field GF(2^127-1) offers
-extremely efficient arithmetic as it is a Mersenne prime. Together
-these improvements substantially reduce power consumption and
-computation time.
+operations, the number of group operations involved in scalar
+multiplication has not been reduced in the curves considered for IETF
+use. Using curves with endomorphisms reduces the number of group
+operations by enabling scalars to be recoded in shorter forms. By
+using curves over quadratic extensions there are more endomorphism
+families to pick from, and the field operations become more
+efficient. The field GF(2^127-1) offers extremely efficient arithmetic
+as it is a Mersenne prime. Together these improvements substantially
+reduce power consumption and computation time.
 
 This document specifies an Edwards curve ("Curve4Q"), proposed in
 [Curve4Q], that supports constant-time, exception-free scalar
@@ -245,22 +265,8 @@ def encodePoint(P):
 ~~~~~
 
 
-# The Curve4Q Function
-
-The Curve4Q function produces 64 output bytes from an input point P and a
-256-bit integer coefficient m.  The output of the Curve4Q function
-are the coordinates of the curve point [m]*P, encoded as described above.
-
-~~~~~
-Curve4Q(m, P) = encodeGFp2(MUL(m, P)[0])
-~~~~~
-
-The function encodeGFp2 is defined above.  The MUL function represents scalar
-multiplication according to the group law of the curve.  We give two explicit
-algorithms for computing MUL below: a baseline algorithm that is short, simple
-and slow, and an optimized algorithm that uses endomorphisms and some precomputation 
-to achieve significant speed benefits.
-
+# Scalar multiplication
+We now present two algorithms for scalar multiplication on the above curve.
 
 ## Baseline Point Multiplication Algorithm
 
@@ -525,11 +531,11 @@ a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 - t3\*b3 - t4\*b4. Precisely 
 coordinate: this is the one fed into the next scalar recoding step. Each entry is 64 bits after this
 calculation, and so the ti and m can be truncated to 64 bits during this calculation (but not the calculation of ti itself!)
 
-The second step takes the four 64 bit integers a1, a2, a3, a4
-from the previous step and outputs two arrays m[0]..m[64] and
-d[0]..d[64]. Each entry of d is between 0 and 7, and each entry in m
-is -1 or 0. Rather then describe the properties required of this
-encoding, we present the algorithm. bit(x, n) denotes the nth bit of x.
+The second step takes the four 64 bit integers a1, a2, a3, a4 from the
+previous step and outputs two arrays m[0]..m[64] and d[0]..d[64]. Each
+entry of d is between 0 and 7, and each entry in m is -1 or 0. Rather
+then describe the properties required of this encoding, we present the
+algorithm that computes it. bit(x, n) denotes the nth bit of x.
 
 ~~~~~
 m[64]=-1
@@ -568,10 +574,9 @@ constant time, and without differences in the patterns of memory
 accesses depending on which values are used.
 
 The multiplication algorithm above only works properly for N-torsion
-points. Implementations for Diffie-Hellman key exchange (and similar
-applications) MUST NOT use this algorithm on anything that is not an N-
-torsion point.  Otherwise, it will produce the wrong answer, with
-extremely negative consequences for security.
+points. Implementations MUST NOT use this algorithm on anything that
+is not an N- torsion point.  Otherwise, it will produce the wrong
+answer, with extremely negative consequences for security.
 
 # Use of the scalar multiplication primitive for Diffie-Hellman Key Agreement
 
@@ -595,10 +600,11 @@ return [m]*Q
 Two users, Alice and Bob, can carry out the following steps to derive
 a shared key: both pick a random string of 32 bytes, mA and mB
 respectively. Alice computes the public key A = DH(mA, G), and Bob
-computes the public key B = DH(mB, G).  They exchange A and B, and
-then Alice computes KAB = DH(mA, B) while Bob computes KBA = DH(mB,
-A), which produces K = KAB = KBA.  The first 32 bytes of this shared secret
-are the key that has been derived. The x coordinate is not used.
+computes the public key B = DH(mB, G).  Each of these is serialized to
+33 bytes. They exchange A and B, and then Alice computes KAB = DH(mA,
+B) while Bob computes KBA = DH(mB, A), which produces K = KAB = KBA.
+The first 32 bytes of this shared secret are the key that has been
+derived. The x coordinate is not used.
 
 The computations above can be directly carried out using the optimized
 point multiplication algorithm. Public keys can be computed using
