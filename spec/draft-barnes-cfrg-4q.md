@@ -71,6 +71,28 @@ informative:
               ins: Tanja Lange
           -
               ins: Christiane Peters
+    TLS:
+       target: "https://tools.ietf.org/html/rfc5246"
+       title: The Transport Layer Security (TLS) Protocol Version 1.2
+       author:
+          -
+              ins: Eric Rescorla
+          -
+              ins: Tim Dierks
+    EMS:
+       target: "https://tools.ietf.org/html/rfc7627"
+       title: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
+       author:
+          -
+              ins: Karthikeyan Bhargavan
+          -
+              ins: Antoine Delignat-Lavaud
+          -
+              ins: Alfredo Pironti
+          -
+              ins: Adam Langley
+          -
+              ins: Marsh Ray
       
 --- abstract
 
@@ -191,6 +213,7 @@ represented by tuples of field elements (x, y). The identity is represented
 as a point with x coordinate 0 and y coordinate 1.
 
 [[TODO: Change this code to use compressed points]]
+
 ~~~~~
 <CODE BEGINS>
 def decodeLittleEndian(b, bits):
@@ -559,7 +582,7 @@ it only requires nine doublings and two additions (i.e., one uses the
 binary representation of 392 and computes a double-and-add point
 multiplication scanning bits from left to right).  It MUST NOT be
 computed with the optimized algorithm above, as P is not known to be a
-torsion point.
+torsion point, and therefore the scalar recoding is not correct.
 
 ~~~
 DH(m, P):
@@ -608,7 +631,7 @@ twist-secure: implementations using single coordinate ladders MUST
 validate points before operating on them. In the case of protocols
 that require contributory behavior, when the identity is the output of
 the DH primitive it MUST be rejected and failure signaled to higher
-levels. Notoriously [TLS] without [EMS] is such a protocol
+levels. Notoriously [TLS] without [EMS] is such a protocol.
 
 The arithmetic operations and table loads must be done in constant
 time to prevent timing and cache attacks. Side-channel analysis is a
@@ -617,7 +640,7 @@ ensure that the operations used do in fact avoid leaking information.
 
 If private scalars are not reused in the Diffie-Hellman protocol, the
 security against side channel attacks is increased. Protocols which
-require contributory behavior such as TLS 1.2 and certain other
+require contributory behavior such as TLS 1.2 [TLS] and certain other
 protocols MUST check that the computed shared secret is not the
 identity, and if it is MUST signal failure.
 
