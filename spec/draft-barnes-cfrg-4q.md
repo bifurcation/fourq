@@ -88,17 +88,28 @@ motivated by clear performance and security goals.
 Public key cryptography continues to be computationally expensive
 particularly on less powerful devices. While recent advances in
 efficient formulas for addition and doubling have substantially
-reduced the cost of elliptic curve operations, the use of
-endomorphisms enables even more speedups, as does using quadratic
-fields over smaller primes.  This facilitates significant reductions
-in power consumption as well as computing time.
+reduced the cost of elliptic curve operations in terms of field
+operations, the number of the group operations has not been reduced in
+the curves considered for IETF use. Using curves with endomorphisms
+reduces the number of group operations by enabling scalars to be
+recoded in shorter forms. By using curves over quadratic extensions
+there are more endomorphism families to pick from, and the field
+operations become more efficient. The field GF(2^127-1) offers
+extremely efficient arithmetic as it is a Mersenne prime. Together
+these improvements substantially reduce power consumption and
+computation time.
 
-This document specifies an Edwards curve ("Curve4Q"), proposed in [Curve4Q], that supports
-constant-time, exception-free scalar multiplications that are significantly faster and more power-efficient
-than any other available alternatives. As described in [Curve4Q], this curve is uniquely determined by specific 
-properties that are required to achieve top performance at a specific security level: Curve4Q is the only known curve that 
-permits a four dimensional decomposition over the highly efficient field GF(p^2) with p = 2^127 - 1 while offering close to 
-128 bits of security.  This "uniqueness" allays concerns about selecting curves vulnerable to as of yet unknown attacks.
+This document specifies an Edwards curve ("Curve4Q"), proposed in
+[Curve4Q], that supports constant-time, exception-free scalar
+multiplications that are significantly faster and more power-efficient
+than any other available alternatives. As described in [Curve4Q], this
+curve is uniquely determined by specific properties that are required
+to achieve top performance at a specific security level: Curve4Q is
+the only known curve that permits a four dimensional decomposition
+over the highly efficient field GF(p^2) with p = 2^127 - 1 while
+offering close to 128 bits of security.  This "uniqueness" allays
+concerns about selecting curves vulnerable to as of yet unknown
+attacks.
 
 This document also specifies how to perform Diffie-Hellman key agreement using this curve.
 
@@ -143,14 +154,15 @@ for x0 and x1, that is 32 bytes.  Implementations will use whatever internal rep
 describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, where x0 and x1 are elements 
 of GF(p).
 
-Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is serialized in a compressed form
-as the representation of y followed by a single byte: 0 if the lexographically smaller of the two x
-coordinates is the right one, 1 if not.
+Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
+serialized in a compressed form as the representation of y followed by
+a single byte: 0 if the lexographically smaller (when serialized) of
+the two x coordinates is the right one, 1 if not.
 
 ~~~~~
-|--------------- x ---------------|--------------- y ---------------|
-|       x0     |0|       x1     |0|       y0     |0|       y1     |0|
-|..............|.|..............|.|..............|.|..............|.|
+|--------------- y ---------------|s|
+|       y0     |0|       y1     |0|s|
+|..............|.|..............|.|.|
 ~~~~~
 
 Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of GF(p^2). Addition of A and B is performed coordinate-wise: 
@@ -165,12 +177,13 @@ Theorem: 1/a = a^(p - 2) = a^(2^127 - 3).
 Decompression requires the taking of square roots in GF(p^2). To
 compute the square root of A=a0+a1\*i, take the square root c of
 a0^2+a1^2 in GF(p). If there is no solution, there is no square
-root. Now compute t^2=(c+a0)/2, and u^2=(c-a0)/2, and the square root
-is t+u\*i or t-u\*i. One, two, or neither of these may be correct. If neither,
-then there is no square root. If one, the other square root is the negation of
-the answer, and if both, both square roots have been found.
+root. Now compute t^2=(c+a0)/2, and attempt to take the square root t.
+If the attempt fails, negate c and try again. If this also fails,
+there is no square root. If t is zero, then let u=sqrt(-a0). Otherwise
+let u=a1/(2t). The square roots of A are then t+u\*i and -t-u\*i.
 
-To compute a square root of a in GF(p), take a^((p-3)/4) and check it for correctness. If incorrect a has no square root.
+To compute a square root of a in GF(p), take a^((p-3)/4) and check it
+for correctness. If incorrect a has no square root.
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
@@ -325,14 +338,18 @@ T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
 representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
 R4 is (X,Y,Z).
 
-A point doubling (DBL) takes an R4 point and produces an R1 point. For addition, we first define ADD_core that takes 
-an R2 and R3 point and produces an R1 point. Then, a point addition (ADD), which takes an R1 and R2 point as inputs, 
-converts the R1 point to R3, and then executes ADD_core. Exposing these operations and the multiple representations 
-helps save time during table precomputation and the actual point multiplication by avoiding redundant computations. Conversion
-between point representations is straightforward.
+A point doubling (DBL) takes an R4 point and produces an R1 point. For
+addition, we first define ADD_core that takes an R2 and R3 point and
+produces an R1 point. Then, a point addition (ADD), which takes an R1
+and R2 point as inputs, converts the R1 point to R3, and then executes
+ADD_core. Exposing these operations and the multiple representations
+helps save time during table precomputation and the actual point
+multiplication by avoiding redundant computations. Conversion between
+point representations is straightforward.
 
-Below, we list the explicit formulas for the required point operations.  These formulas were adapted 
-from [Twisted] and [Twisted Revisted]. 
+Below, we list the explicit formulas for the required point
+operations.  These formulas were adapted from [Twisted] and [Twisted
+Revisted].
 
 Doubling is computed as follows:
 
@@ -483,7 +500,7 @@ integers used to implement rounding.
 Let c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 + b4. Then compute ti = floor(li\*m/2^256), and then compute
 a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 - t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
 coordinate: this is the one fed into the next scalar recoding step. Each entry is 64 bits after this
-calculation, and so the ti and m can be truncated to 64 bits.
+calculation, and so the ti and m can be truncated to 64 bits during this calculation (but not the calculation of ti itself!)
 
 The second step takes the four 64 bit integers a1, a2, a3, a4
 from the previous step and outputs two arrays m[0]..m[64] and
@@ -535,11 +552,14 @@ extremely negative consequences for security.
 
 # Use of the scalar multiplication primitive for Diffie-Hellman Key Agreement
 
-The above scalar multiplication primitive can be used to implement Diffie-Hellman
-with cofactor.  Note that the multiplication by the cofactor 392 does not need to be computed in
-constant time and, hence, it only requires nine doublings and two additions (i.e., one uses the binary 
-representation of 392 and computes a double-and-add point multiplication scanning bits from left to right).
-It MUST NOT be computed with the optimized algorithm above, as P is not known to be a torsion point.
+The above scalar multiplication primitive can be used to implement
+Diffie-Hellman with cofactor.  Note that the multiplication by the
+cofactor 392 does not need to be computed in constant time and, hence,
+it only requires nine doublings and two additions (i.e., one uses the
+binary representation of 392 and computes a double-and-add point
+multiplication scanning bits from left to right).  It MUST NOT be
+computed with the optimized algorithm above, as P is not known to be a
+torsion point.
 
 ~~~
 DH(m, P):
@@ -586,9 +606,9 @@ algorithms are on the curve. Removing such checks may result in
 revealing the entire scalar to an attacker. The curve is not
 twist-secure: implementations using single coordinate ladders MUST
 validate points before operating on them. In the case of protocols
-that require contributory behavior when the identity is the output of
+that require contributory behavior, when the identity is the output of
 the DH primitive it MUST be rejected and failure signaled to higher
-levels.
+levels. Notoriously [TLS] without [EMS] is such a protocol
 
 The arithmetic operations and table loads must be done in constant
 time to prevent timing and cache attacks. Side-channel analysis is a
