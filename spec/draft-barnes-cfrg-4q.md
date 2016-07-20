@@ -116,18 +116,18 @@ informative:
       
 --- abstract
 
-This document specifies an Edwards curve defined over a quadratic
+This document specifies an twisted Edwards curve defined over a quadratic
 extension of a prime field that offers the fastest known
 Diffie-Hellman key agreements with 128 bit security.  It is two times
 faster then Curve25519, and when not using endomorphisms 1.2 percent
-faster.  This curve is the only known curve satisfying list of properties
-motivated by clear performance and security goals.
+faster.  This curve is the only known curve with a four dimensional
+scalar decomposition over a quadratic extension of GF(2^127-1).
 
 --- middle
 
 # Introduction
 
-Public key cryptography continues to be computationally expensive
+Public key cryptography continues to be computationally expensive,
 particularly on less powerful devices. While recent advances in
 efficient formulas for addition and doubling have substantially
 reduced the cost of elliptic curve operations in terms of field
@@ -136,24 +136,20 @@ multiplication has not been reduced in the curves considered for IETF
 use. Using curves with endomorphisms reduces the number of group
 operations by enabling scalars to be recoded in shorter forms. By
 using curves over quadratic extensions there are more endomorphism
-families to pick from, and the field operations become more
-efficient. The field GF(2^127-1) offers extremely efficient arithmetic
-as it is a Mersenne prime. Together these improvements substantially
-reduce power consumption and computation time.
+families to pick from, and the field operations become more efficient
+compared to prime fields of the same size. The field GF(2^127-1)
+offers extremely efficient arithmetic as it is a Mersenne
+prime. Together these improvements substantially reduce power
+consumption and computation time.
 
-This document specifies an Edwards curve ("Curve4Q"), proposed in
-[Curve4Q], that supports constant-time, exception-free scalar
-multiplications that are significantly faster and more power-efficient
-than any other available alternatives. As described in [Curve4Q], this
-curve is uniquely determined by specific properties that are required
-to achieve top performance at a specific security level: Curve4Q is
-the only known curve that permits a four dimensional decomposition
-over the highly efficient field GF(p^2) with p = 2^127 - 1 while
-offering close to 128 bits of security.  This "uniqueness" allays
-concerns about selecting curves vulnerable to as of yet unknown
-attacks.
-
-This document also specifies how to perform Diffie-Hellman key agreement using this curve.
+This document specifies a twisted Edwards curve ("Curve4Q"), proposed
+in [Curve4Q], that supports constant-time, exception-free scalar
+multiplications that are faster then any alternative. As described in
+[Curve4Q], Curve4Q is the only known curve that permits a four
+dimensional decomposition over the highly efficient field GF(p^2) with
+p = 2^127 - 1 while offering close to 128 bits of security.  This
+"uniqueness" allays concerns about selecting curves vulnerable to
+undisclosed attacks.
 
 # Mathematical Prerequisites
 
@@ -183,7 +179,8 @@ N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 This group is isomorphic to the Jacobian of points on the isogenous elliptic curve as explained
 in [FourQ]. It posseses efficiently computable endomorphisms as a result of the elliptic curve being
 isogenous to its Galois conjugate, as well as having complex multiplication. As a result it is possible
-to simultaneously apply the decompositions of scalars due to  [GLV, GLS]
+to simultaneously apply the endomorphisms from [GLV] and those in the style of [GLS] to achieve a four
+dimensional decomposition of scalars.
 
 # Curve Points
 
@@ -239,9 +236,8 @@ for correctness. If incorrect a has no square root.
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
 represented by tuples of field elements (x, y). The identity is represented
-as a point with x coordinate 0 and y coordinate 1.
-
-[[TODO: Change this code to use compressed points]]
+as a point with x coordinate 0 and y coordinate 1. Points are not represented
+in compressed format.
 
 ~~~~~
 <CODE BEGINS>
