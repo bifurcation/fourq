@@ -207,6 +207,15 @@ the two x coordinates is the right one, 1 if not.
 |..............|.|..............|.|.|
 ~~~~~
 
+It may also be serialized in an uncompressed form as the representation of y followed by the representation of x:
+
+~~~~~
+|--------------- y ---------------|-------------- x -------------|
+|       y0     |0|       y1     |0|       x0    |0|      x1    |0|
+|..............|.|..............|.|.............|.|............|0|
+~~~~~
+
+
 Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of GF(p^2). Addition of A and B is performed coordinate-wise: 
 A+B = (a0+b0) + (a1+b1)\*i, as well as subtraction: A-B = (a0-b0) + (a1-b1)\*i. Multiplication is similarly simple: 
 A\*B = (a0\*b0-a1\*b1) + (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1\*b1) + ((a0+a1)\*(b0+b1)-a0\*b0-a1\*b1)\*i.
@@ -253,13 +262,13 @@ def encodeGFp2(X):
     return b0 + b1
 
 def decodePoint(b):
-    X = decodeGFp2(b)
-    Y = decodeGFp2(b[32:])
+    Y = decodeGFp2(b)
+    X = decodeGFp2(b[32:])
     return (X, Y)
 
 def encodePoint(P):
-    B0 = encodeGFp2(P[0])
-    B1 = encodeGFp2(P[1])
+    B0 = encodeGFp2(P[1])
+    B1 = encodeGFp2(P[0])
     return B0 + B1
 <CODE ENDS>
 ~~~~~
@@ -604,7 +613,8 @@ computes the public key B = DH(mB, G).  Each of these is serialized to
 33 bytes. They exchange A and B, and then Alice computes KAB = DH(mA,
 B) while Bob computes KBA = DH(mB, A), which produces K = KAB = KBA.
 The first 32 bytes of this shared secret are the key that has been
-derived. The x coordinate is not used.
+derived. The x coordinate is not used. The coordinates of G are in
+the appendix.
 
 The computations above can be directly carried out using the optimized
 point multiplication algorithm. Public keys can be computed using
@@ -649,7 +659,6 @@ security against side channel attacks is increased. Protocols which
 require contributory behavior such as TLS 1.2 [TLS] and certain other
 protocols MUST check that the computed shared secret is not the
 identity, and if it is MUST signal failure.
-
 
 #Acknowledgements
 
@@ -707,3 +716,7 @@ b3 = [1705647224544756482, 199320682881407569,
    -3336360048424633503, 765171327772315031]
 
 b4 = [1400113754146392127, 3540637644719456050, -471270406870313397, -1789345740969872106]
+
+Gx =
+
+Gy =
