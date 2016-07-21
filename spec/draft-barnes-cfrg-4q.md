@@ -42,7 +42,17 @@ informative:
          -
               ins: Craig Costello
          -
-              ins: Patrick Longa
+              ins: Patrick Longa    
+              
+    Decompression:
+      target: TBA
+      title: TBA
+      author:
+         -
+              ins: Craig Costello
+         -
+              ins: Patrick Longa     
+              
     GLV:
        target: "https://www.iacr.org/archive/crypto2001/21390189.pdf"
        title: "Faster Point Multiplication on Elliptic Curves with Efficient Endomorphisms"
@@ -52,7 +62,8 @@ informative:
           -
              ins: Robert J. Lambert
           -
-             ins: Scott A. Vanstone
+             ins: Scott A. Vanstone   
+              
     GLS:
         target: "https://www.iacr.org/archive/eurocrypt2009/54790519/54790519.pdf"
         title: "Endomorphisms for Faster Elliptic Curve Cryptograpjy on a Large Class of Curves"
@@ -90,7 +101,8 @@ informative:
           -
               ins: Tanja Lange
           -
-              ins: Christiane Peters
+              ins: Christiane Peters   
+              
     TLS:
        target: "https://tools.ietf.org/html/rfc5246"
        title: The Transport Layer Security (TLS) Protocol Version 1.2
@@ -116,11 +128,11 @@ informative:
       
 --- abstract
 
-This document specifies an twisted Edwards curve defined over a quadratic
+This document specifies a twisted Edwards curve defined over a quadratic
 extension of a prime field that offers the fastest known
-Diffie-Hellman key agreements with 128 bit security.  It is two times
-faster then Curve25519, and when not using endomorphisms 1.2 percent
-faster.  This curve is the only known curve with a four dimensional
+Diffie-Hellman key agreements with 128 bit security.  It is more than two times
+faster than Curve25519 when using endomorphisms, and 1.2 times
+faster when not using endomorphisms.  This curve is the only known curve with a four dimensional
 scalar decomposition over a quadratic extension of GF(2^127-1).
 
 --- middle
@@ -144,7 +156,7 @@ consumption and computation time.
 
 This document specifies a twisted Edwards curve ("Curve4Q"), proposed
 in [Curve4Q], that supports constant-time, exception-free scalar
-multiplications that are faster then any alternative. As described in
+multiplications that are faster than any alternative. As described in
 [Curve4Q], Curve4Q is the only known curve that permits a four
 dimensional decomposition over the highly efficient field GF(p^2) with
 p = 2^127 - 1 while offering close to 128 bits of security.  This
@@ -184,34 +196,36 @@ dimensional decomposition of scalars.
 
 # Curve Points
 
-Elements a in GF(p) are represented as 16 byte little endian integers which are the numbers in the
-range [0, p). Because they are always less then p, they always have the top bit clear. The 16 bytes
-b[0], b[1],... b[15] represent b[0]+256*b[1]+256^2*b[2]+...+256^15*b[16].
+Let (x, y) be a point on Curve4Q, where x = x0 + x1\*i and y = y0 + y1\*i are elements of GF(p^2).  
+Assume that the elements x0, x1, y0 and y1 have values in the range [0, p).  
+The element x is defined as "negative" if and only if x0 is odd, i.e., if its least significant bit is 1.
 
-An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation of the encodings 
-for x0 and x1, that is 32 bytes.  Implementations will use whatever internal representation they desire, but we will 
-describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, where x0 and x1 are elements 
-of GF(p).
-
-Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
-serialized in a compressed form as the representation of y followed by
-a single byte: 0 if the lexographically smaller (when serialized) of
-the two x coordinates is the right one, 1 if not.
+Compressed points on the wire are encoded in 32 bytes. The 16 least significant bytes contain y0 encoded 
+as little endian integer.  The top bit of the most significant byte in the encoding of y0 is always clear.  
+In this case, the 16 bytes b[0], b[1],... b[15] represent y0 = b[0]+256\*b[1]+256^2\*b[2]+...+256^15\*b[16].  
+The 16 most significant bytes contain y1 encoded as little endian integer and have the top bit of the most 
+significant byte storing the sign bit of x: if x is negative then this bit is 1, otherwise it is 0.  
+In this case, the 16 bytes b[0], b[1],... b[15] represent y1+2^255\*s = b[0]+256\*b[1]+256^2\*b[2]+...+256^15\*b[16].
 
 ~~~~~
-|--------------- y ---------------|s|
-|       y0     |0|       y1     |0|s|
-|..............|.|..............|.|.|
+|--------------- y -------------|s|
+|       y0       |       y1     |s|
+|................|..............|.|
 ~~~~~
 
-It may also be serialized in an uncompressed form as the representation of y followed by the representation of x:
+Point decompression works as follows. After parsing y and s from a 32 byte compressed point, compute u/v = (y^2 - 1)/(d*y^2 + 1)
+and then compute x = sign * sqrt(u/v), where sign = 1 if s = 0 and sign = -1 if s = 1. This computation can be performed
+efficiently with roughly two exponentiations over GF(p). Refer to [Decompression] for complete details.
+
+Points may also be serialized in uncompressed form. In this case, elements x0, x1, y0 and y1 are encoded as 16 
+byte little endian integers, where top bits for each element are always clear.  
+Uncompressed points on the wire are encoded in 64 bytes by concatenating the encodings of y0, y1, x0 and x1. 
 
 ~~~~~
 |--------------- y ---------------|-------------- x -------------|
-|       y0     |0|       y1     |0|       x0    |0|      x1    |0|
-|..............|.|..............|.|.............|.|............|0|
+|       y0       |       y1       |       x0      |      x1      |
+|................|................|...............|..............|
 ~~~~~
-
 
 Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of GF(p^2). Addition of A and B is performed coordinate-wise: 
 A+B = (a0+b0) + (a1+b1)\*i, as well as subtraction: A-B = (a0-b0) + (a1-b1)\*i. Multiplication is similarly simple: 
@@ -222,16 +236,8 @@ Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
 Inversion of nonzero elements of GF(p) can be computed in constant-time using one exponentiation via Fermat's Little 
 Theorem: 1/a = a^(p - 2) = a^(2^127 - 3).
 
-Decompression requires the taking of square roots in GF(p^2). To
-compute the square root of A=a0+a1\*i, take the square root c of
-a0^2+a1^2 in GF(p). If there is no solution, there is no square
-root. Now compute t^2=(c+a0)/2, and attempt to take the square root t.
-If the attempt fails, negate c and try again. If this also fails,
-there is no square root. If t is zero, then let u=sqrt(-a0). Otherwise
-let u=a1/(2t). The square roots of A are then t+u\*i and -t-u\*i.
-
-To compute a square root of a in GF(p), take a^((p-3)/4) and check it
-for correctness. If incorrect a has no square root.
+To compute a square root of a in GF(p), compute c = a^((p-3)/4) and check if c^2 = a. If this evaluation does not hold then a 
+has no square root.
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
