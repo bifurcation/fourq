@@ -49,6 +49,20 @@ informative:
               ins: C. Costello
          -
               ins: P. Longa
+    Ed25519:
+       target: "https://ed25519.cr.yp.to/ed25519-20110926.pdf"
+       title: "High-speed high-security signatures"
+       author:
+          -
+              ins: D.J. Bernstein
+          -
+              ins: N. Duif
+          -
+              ins: T. Lange
+          -
+              ins: P. Schwabe
+          -
+              ins: B.-Y. Yang
     EMS:
        target: "https://tools.ietf.org/html/rfc7627"
        title: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
@@ -134,7 +148,7 @@ informative:
 This document specifies an twisted Edwards curve defined over a quadratic
 extension of a prime field that offers the fastest known
 Diffie-Hellman key agreements with 128 bit security.  It is two times
-faster then Curve25519, and when not using endomorphisms 1.2 percent
+faster than Curve25519, and when not using endomorphisms 1.2 percent
 faster.  This curve is the only known curve with a four dimensional
 scalar decomposition over a quadratic extension of GF(2^127-1).
 
@@ -153,13 +167,13 @@ operations by enabling scalars to be recoded in shorter forms. By
 using curves over quadratic extensions there are more endomorphism
 families to pick from, and the field operations become more efficient
 compared to prime fields of the same size. The field GF(2^127-1)
-offers extremely efficient arithmetic as it is a Mersenne
+offers extremely efficient arithmetic as the modulus is a Mersenne
 prime. Together these improvements substantially reduce power
 consumption and computation time.
 
 This document specifies a twisted Edwards curve ("Curve4Q"), proposed
 in [Curve4Q], that supports constant-time, exception-free scalar
-multiplications that are faster then any alternative. As described in
+multiplications that are faster than any alternative. As described in
 [Curve4Q], Curve4Q is the only known curve that permits a four
 dimensional decomposition over the highly efficient field GF(p^2) with
 p = 2^127 - 1 while offering close to 128 bits of security.  This
@@ -192,7 +206,7 @@ N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
 This group is isomorphic to the Jacobian of points on the isogenous elliptic curve as explained
-in [FourQ]. It posseses efficiently computable endomorphisms as a result of the elliptic curve being
+in [Curve4Q]. It posseses efficiently computable endomorphisms as a result of the elliptic curve being
 isogenous to its Galois conjugate, as well as having complex multiplication. As a result it is possible
 to simultaneously apply the endomorphisms from [GLV] and those in the style of [GLS] to achieve a four
 dimensional decomposition of scalars.
@@ -200,7 +214,7 @@ dimensional decomposition of scalars.
 # Curve Points
 
 Elements a in GF(p) are represented as 16 byte little endian integers which are the numbers in the
-range [0, p). Because they are always less then p, they always have the top bit clear. The 16 bytes
+range [0, p). Because they are always less than p, they always have the top bit clear. The 16 bytes
 b[0], b[1],... b[15] represent b[0]+256*b[1]+256^2*b[2]+...+256^15*b[16].
 
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation of the encodings 
@@ -237,7 +251,7 @@ Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
 Inversion of nonzero elements of GF(p) can be computed in
 constant-time using one exponentiation via Fermat's Little Theorem:
 1/a = a^(p - 2) = a^(2^127 - 3). It is also necessary to compute the
-inverse square roots of elemnts of GF(p) by computing a^((5p-11)/4). This
+inverse square roots of elemnts of GF(p) by computing a^((p-3)/4). This
 computes the reciprocal of a square root of a if one exists, and otherwise
 computes the reciprocal of the square root of -a. The use of this operation
 in accelerating decompression comes from [invsqr].
@@ -255,17 +269,17 @@ Algorithm 8 from [SQRT].
                 return 0 + t*i
         else:
             n = a^2+b^2
-            s = (n)^((5p-11)/4)
+            s = (n)^((p-3)/4)
             if n*s^2 is not 1:
                 return FAILURE
             c = n*s
             delta = (a+c)/2
-            g = (delta)^((5p-11)/4)
+            g = (delta)^((p-3)/4)
             if delta*g^2 = 1:
                 x0 = delta*g
                 x1 = (b/2)*delta
              else:
-                 x1 = delta *g
+                 x1 = delta*g
                  x0 = (b/2)*delta
              return (x0+i*x1)*s
 ~~~~~
@@ -392,13 +406,14 @@ This algorithm takes a scalar m and a point P, which is an N torsion point, and 
 It computes phi(P), psi(P), and
 psi(phi(P)), where phi and psi are endomorphisms, and then computes
 [m]\*P = [a_0]\*P + [a_1]\*phi(P) + [a_2]\*psi(P) + [a_3]\*psi(phi(P)), where a_0, a_1,
-a_2, and a_3 are computed as described below. This method is significantly more efficient 
-than the baseline point multiplication algorithm from above.
+a_2, and a_3 are computed as described below. This multiexponentation is computed
+via recoding that reduces the number of additions and doublings to merely 64 of each.
+The algorithm is considerably faster then the naive one listed above.
 In its description we make use of constants listed in the appendix.
 
-We describe the different pieces that are necessary by the algorithm: point representations and explicit formulas,
-table precomputation, scalar decomposition and scalar recoding. We then describe how these are put together to
-compute the point multiplication.
+We describe each operation seperately: the formulas for point addition and doubling,
+the computation of the endomorphisms, the scalar decompositon and recoding, and lastly
+the computation of the final results.
 
 ### Alternative Point Representations and Addition Laws
 
@@ -410,20 +425,21 @@ in the optimized scalar multiplication algorithm in order to save
 computations: point representation R1 is given by (X,Y,Z,Ta,Tb), where
 T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
 representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
-R4 is (X,Y,Z).
+R4 is (X,Y,Z). R2 representation was introduced in [Ed25519] to accelerate
+additions.
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
 addition, we first define ADD_core that takes an R2 and R3 point and
-produces an R1 point. Then, a point addition (ADD), which takes an R1
-and R2 point as inputs, converts the R1 point to R3, and then executes
-ADD_core. Exposing these operations and the multiple representations
-helps save time during table precomputation and the actual point
-multiplication by avoiding redundant computations. Conversion between
-point representations is straightforward.
+produces an R1 point, and then use it to define a point addition (ADD)
+which takes an R1 and R2 point as inputs, converts the R1 point to R3,
+and then executes ADD_core. Exposing these operations and the multiple
+representations helps save time during table precomputation and the
+actual point multiplication by avoiding redundant
+computations. Conversion between point representations is
+straightforward.
 
 Below, we list the explicit formulas for the required point
-operations.  These formulas were adapted from [Twisted] and [Twisted
-Revisted].
+operations. These formulas were adapted from [Twisted] and [TwistedRevisited].
 
 Doubling is computed as follows:
 
@@ -466,11 +482,18 @@ return (X3, Y3, Z3, Ta3, Tb3)
 
 ### Endomorphisms and Isogenies
 
-Endomorphisms are computed as phi(Q) = tau_dual(upsilon(tau(Q)) and psi(Q) = tau_dual(chi(tau(Q))). 
-Below, we present procedures for tau, tau_dual, upsilon and chi, adapted from [FourQlib]. Tau_dual produces
-an R1 point, while the other proceedures produce projective coordinates. Nota Bene: tau produces points
-on a different curve, while upsilon and chi are endomorphisms on that different curve. As a result the
-intermediate results do not satisfy the equations of the curve E.
+The two endomorphisms phi and psi used to accelerate multiplication
+are computed as phi(Q) = tau_dual(upsilon(tau(Q)) and psi(Q) =
+tau_dual(chi(tau(Q))).  Below, we present procedures for tau,
+tau_dual, upsilon and chi, adapted from [FourQlib]. Tau_dual produces
+an R1 point, while the other proceedures produce projective
+coordinates. Nota Bene: tau produces points on a different curve,
+while upsilon and chi are endomorphisms on that different curve. As a
+result the intermediate results do not satisfy the equations of the
+curve E. Implementors who wish to check the correctness of these
+intermediate results are advised to read the [Curve4Q] paper to
+discover which formulas are satisfied by each set of inputs and
+output.
 
 ~~~~
 tau(X1, Y1, Z1):
@@ -536,9 +559,10 @@ return(X2, Y2, Z2)
 
 ### Table Precomputation
 
-This stage consists of computing a table of 8 points in representation R2. 
-First, compute Q = psi(P), R = phi(P) and S = psi(phi(P)) in representation R1 using the formulas from the previous
-section. Then, convert these points from R1 to R3 in preperation for the next step.
+This stage consists of computing a table of 8 points in representation
+R2.  Start by setting Q = psi(P), R = phi(P) and S = psi(phi(P)) in
+representation R1 using the formulas from the previous section and
+convert these points to R3 for the next step.
 
 The 8 points in the table are generated using ADD_core as follows:
 
@@ -568,13 +592,17 @@ by the multiplication algorithm.
 
 This decomposition uses another bunch of constants defining four
 vectors with integer coordinates b1, b2, b3, b4. These constants are
-64 bit. Then there are four constants l1, l2, l3, l4 which are long
+64 bit. In addition we have l1, l2, l3, l4 which are long
 integers used to implement rounding.
 
-Let c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 + b4. Then compute ti = floor(li\*m/2^256), and then compute
-a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 - t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
-coordinate: this is the one fed into the next scalar recoding step. Each entry is 64 bits after this
-calculation, and so the ti and m can be truncated to 64 bits during this calculation (but not the calculation of ti itself!)
+Let c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 +
+b4. Next compute ti = floor(li\*m/2^256) for 1 between 1 and 4, and
+then compute a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 -
+t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
+coordinate: this is the one fed into the scalar recoding
+step. Each element of the vector is 64 bits after this calculation, and so the ti and
+m can be truncated to 64 bits during this calculation (but not the
+calculation of ti itself!)
 
 The second step takes the four 64 bit integers a1, a2, a3, a4 from the
 previous step and outputs two arrays m[0]..m[64] and d[0]..d[64]. Each
@@ -600,7 +628,7 @@ We now describe the full algorithm for computing point multiplication. On inputs
 precomputed table T with 8 points (see "Table Precomputation") and then carries out the scalar decomposition and scalar recoding 
 to produce the two arrays m[0]..m[64] and d[0]..d[64\] (see "Scalar Decomposition and Recoding"). 
 
-Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0.  The main loop of the point multiplication algorithm is the following:
+Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then the multiplication is completed by the following pseudocode:
 
 ~~~~~
 
@@ -662,6 +690,10 @@ inputs and failure cases, and does not leak information about secret
 keys.  For an example, refer to the constant-time fixed-base
 multiplication algorithm implemented in [FourQlib].
 
+Curve4Q MUST NOT be used with ordinary Diffie-Hellman, but MUST
+always be used for Diffie-Hellman with cofactor when Diffie-Hellman is
+used.
+
 # IANA Considerations
 
 IANA need take no action.
@@ -670,10 +702,10 @@ IANA need take no action.
 
 Claus Diem has steadily reduced the security of elliptic curves
 defined over extension fields of degree greater then two over large
-characteristic fields, however the best known attacks on elliptic
+characteristic fields, but so far he best known attacks on elliptic
 curves over quadratic extensions remain the generic algorithms for
-discrete logs, consuming on the order of 2^120 group operations to
-find a single discrete logarithm.
+discrete logs. On Curve 4Q these attacks take on the order of 2^120
+group operations to compute a single discrete logarithm.
 
 Implementations in the context of Diffie-Hellman (and similar
 applications) MUST check that points input to scalar multiplication
