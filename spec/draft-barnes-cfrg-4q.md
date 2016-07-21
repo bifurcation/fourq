@@ -31,66 +31,95 @@ informative:
       title: "FourQ: four-dimensional decompositions on a Q-curve over the Mersenne prime"
       author:
          -
-              ins: Craig Costello
+              ins: C. Costello
          -
-              ins: Patrick Longa    
+              ins: P. Longa
+    Invsqr:
+        target: "http://eprint.iacr.org/2012/309.pdf"
+        title: Fast and compact elliptic-curve cryptography
+        author:
+           -
+              ins: M. Hamburg
               
     FourQlib:
       target: "https://www.microsoft.com/en-us/research/project/fourqlib/"
       title: "FourQlib"
       author:
          -
-              ins: Craig Costello
+              ins: C. Costello
          -
-              ins: Patrick Longa
+              ins: P. Longa
+    EMS:
+       target: "https://tools.ietf.org/html/rfc7627"
+       title: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
+       author:
+          -
+              ins: K. Bhargavan
+          -
+              ins: A. Delignat-Lavaud
+          -
+              ins: A. Pironti
+          -
+              ins: A. Langley
+          -
+              ins: M. Ray
+
     GLV:
        target: "https://www.iacr.org/archive/crypto2001/21390189.pdf"
        title: "Faster Point Multiplication on Elliptic Curves with Efficient Endomorphisms"
        author:
           -
-             ins: Robert P. Gallant
+             ins: R. P. Gallant
           -
-             ins: Robert J. Lambert
+             ins: R. J. Lambert
           -
-             ins: Scott A. Vanstone
+             ins: S. A. Vanstone
     GLS:
         target: "https://www.iacr.org/archive/eurocrypt2009/54790519/54790519.pdf"
         title: "Endomorphisms for Faster Elliptic Curve Cryptograpjy on a Large Class of Curves"
         author:
            -
-             ins: Steven D. Galbraith
+             ins: S. D. Galbraith
            -
-             ins: Xibin Lin
+             ins: X. Lin
            -
-             ins: Michael Scott
-                
+             ins: M. Scott
+    SQRT:
+        target: "https://eprint.iacr.org/2012/685.pdf"
+        title: "Square Root Computation over Even Extension Fields"
+        author:
+           -
+              ins: G. Adj
+           -
+              ins: F. Rodriguez-Henriquez
+
     TwistedRevisited:
        target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
        title: Twisted Edwards Curves Revisited
        author:
           -
-              ins: Huseyin Hisil
+              ins: H. Hisil
           -
-              ins: Kenneth Koon-Ho Wong
+              ins: K-H. Wong
           -
-              ins: Gary Carter
+              ins: G. Carter
           -
-              ins: Ed Dawson
+              ins: E. Dawson
             
     Twisted:
        target: "http://eprint.iacr.org/2008/013.pdf"
        title: Twisted Edwards Curves
        author:
           -
-              ins: Daniel J. Bernstein
+              ins: D. J. Bernstein
           -
-              ins: Peter Birkner
+              ins: P. Birkner
           -
-              ins: Marc Joye
+              ins: M. Joye
           -
-              ins: Tanja Lange
+              ins: T. Lange
           -
-              ins: Christiane Peters
+              ins: C. Peters
     TLS:
        target: "https://tools.ietf.org/html/rfc5246"
        title: The Transport Layer Security (TLS) Protocol Version 1.2
@@ -99,20 +128,6 @@ informative:
               ins: Eric Rescorla
           -
               ins: Tim Dierks
-    EMS:
-       target: "https://tools.ietf.org/html/rfc7627"
-       title: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
-       author:
-          -
-              ins: Karthikeyan Bhargavan
-          -
-              ins: Antoine Delignat-Lavaud
-          -
-              ins: Alfredo Pironti
-          -
-              ins: Adam Langley
-          -
-              ins: Marsh Ray
       
 --- abstract
 
@@ -194,14 +209,14 @@ describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, whe
 of GF(p).
 
 Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
-serialized in a compressed form as the representation of y followed by
-a single byte: 0 if the lexographically smaller (when serialized) of
+serialized in a compressed form as the representation of y whose high bit
+is set according to the sign of x: 0 if the lexographically smaller (when serialized) of
 the two x coordinates is the right one, 1 if not.
 
 ~~~~~
-|--------------- y ---------------|s|
-|       y0     |0|       y1     |0|s|
-|..............|.|..............|.|.|
+|--------------- y ---------------|
+|       y0     |0|       y1     |s|
+|..............|.|..............|.|
 ~~~~~
 
 It may also be serialized in an uncompressed form as the representation of y followed by the representation of x:
@@ -219,19 +234,44 @@ A\*B = (a0\*b0-a1\*b1) + (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1
 Squaring A^2 is computed as (a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is computed as a0/(a0^2+a1^2) - i\*a1/(a0^2+a1^2). 
 Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
 
-Inversion of nonzero elements of GF(p) can be computed in constant-time using one exponentiation via Fermat's Little 
-Theorem: 1/a = a^(p - 2) = a^(2^127 - 3).
+Inversion of nonzero elements of GF(p) can be computed in
+constant-time using one exponentiation via Fermat's Little Theorem:
+1/a = a^(p - 2) = a^(2^127 - 3). It is also necessary to compute the
+inverse square roots of elemnts of GF(p) by computing a^((5p-11)/4). This
+computes the reciprocal of a square root of a if one exists, and otherwise
+computes the reciprocal of the square root of -a. The use of this operation
+in accelerating decompression comes from [invsqr].
 
-Decompression requires the taking of square roots in GF(p^2). To
-compute the square root of A=a0+a1\*i, take the square root c of
-a0^2+a1^2 in GF(p). If there is no solution, there is no square
-root. Now compute t^2=(c+a0)/2, and attempt to take the square root t.
-If the attempt fails, negate c and try again. If this also fails,
-there is no square root. If t is zero, then let u=sqrt(-a0). Otherwise
-let u=a1/(2t). The square roots of A are then t+u\*i and -t-u\*i.
+We now explain how to compute the inverse square root in GF(p^2) by adapting
+Algorithm 8 from [SQRT].
 
-To compute a square root of a in GF(p), take a^((p-3)/4) and check it
-for correctness. If incorrect a has no square root.
+~~~~~
+   InvSqrt(a+b*i):
+        if b = 0:
+            t = a^((5p-11)/4)
+            if a*t^2=1:
+               return t+0*i
+            else:
+                return 0 + t*i
+        else:
+            n = a^2+b^2
+            s = (n)^((5p-11)/4)
+            if n*s^2 is not 1:
+                return FAILURE
+            c = n*s
+            delta = (a+c)/2
+            g = (delta)^((5p-11)/4)
+            if delta*g^2 = 1:
+                x0 = delta*g
+                x1 = (b/2)*delta
+             else:
+                 x1 = delta *g
+                 x0 = (b/2)*delta
+             return (x0+i*x1)*s
+~~~~~
+
+To decompress a point take the value of y (by clearing the high bit,
+and reading in the little-endian number), and compute y^2-1\*invsqr((y^2-1)*(dy^2-1)).
 
 In the Python code samples below, we represent elements of GF(p^2) as Python
 tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
