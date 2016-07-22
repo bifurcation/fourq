@@ -1,12 +1,12 @@
 ---
 title: Curve4Q
-abbrev: 
+abbrev:
 docname: draft-barnes-cfrg-4q
 category: std
- 
+
 ipr: trust200902
 area: Security
-workgroup: 
+workgroup:
 keyword: Internet-Draft
 
 stand_alone: yes
@@ -42,7 +42,7 @@ informative:
         author:
            -
               ins: M. Hamburg
-              
+
     FourQlib:
       target: "https://www.microsoft.com/en-us/research/project/fourqlib/"
       title: "FourQlib"
@@ -66,6 +66,7 @@ informative:
               ins: P. Schwabe
           -
               ins: B.-Y. Yang
+
     EMS:
        target: "Https://tools.ietf.org/html/rfc7627"
        title: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
@@ -93,6 +94,7 @@ informative:
              ins: R. J. Lambert
           -
              ins: S. A. Vanstone
+
     GLS:
         target: "https://www.iacr.org/archive/eurocrypt2009/54790519/54790519.pdf"
         title: "Endomorphisms for Faster Elliptic Curve Cryptograpjy on a Large Class of Curves"
@@ -104,6 +106,7 @@ informative:
              ins: X. Lin
            -
              ins: M. Scott
+
     SQRT:
         target: "https://eprint.iacr.org/2012/685.pdf"
         title: "Square Root Computation over Even Extension Fields"
@@ -113,6 +116,7 @@ informative:
               ins: G. Adj
            -
               ins: F. Rodriguez-Henriquez
+
     SchnorrQ:
        target: "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/SchnorrQ.pdf"
        title: "SchnorrQ"
@@ -136,7 +140,7 @@ informative:
               ins: G. Carter
           -
               ins: E. Dawson
-            
+
     Twisted:
        target: "http://eprint.iacr.org/2008/013.pdf"
        title: Twisted Edwards Curves
@@ -161,7 +165,7 @@ informative:
               ins: E. Rescorla
           -
               ins: T. Dierks
-      
+
 --- abstract
 
 This document specifies an twisted Edwards curve defined over a
@@ -206,8 +210,8 @@ Curve4Q is defined over the finite field GF(p^2), where p is the Mersenne prime
 2^127 - 1.  Elements of this finite field have the form (a + b * i), where a and
 b are elements of the finite field GF(p) (i.e., integers mod p) and i^2 = -1.
 
-Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the following curve
-equation:
+Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
+following curve equation:
 
 ~~~~~
 E: -x^2 + y^2 = 1 + d * x^2 * y^2, with
@@ -216,16 +220,16 @@ d = 0x00000000000000e40000000000000142 +
 0x5e472f846657e0fcb3821488f1fc0c8d * i
 ~~~~~
 
-Let E(GF(p^2)) be the set of GF(p^2)-rational points on E. 
-This set forms an abelian group for which (0,1) is the neutral element and the inverse 
-of a point (x, y) is given by (-x, y). The order of this group is \#E = 2^3 · 7^2 · N, 
-where N is the following 246-bit prime:
+Let E(GF(p^2)) be the set of GF(p^2)-rational points on E.  This set
+forms an abelian group for which (0,1) is the neutral element and the
+inverse of a point (x, y) is given by (-x, y). The order of this group
+is \#E = 2^3 · 7^2 · N, where N is the following 246-bit prime:
 
 ~~~~~
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
-This group is isomorphic to the Jacobian of points on an isomorphic
+This group is isomorphic to the Jacobian of points on an isogenous
 elliptic curve over GF(p^2) as explained in [Curve4Q]. The elliptic
 curve is isogenous to its Galois conjugate, and has complex
 multiplication. These produce two different endormorphisms on E, both
@@ -246,14 +250,15 @@ of GF(p).
 
 Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
 serialized in a compressed form as the representation of y with a
-modified top bit. This y value determines two possible x coordinates.
-We order the elements of GF(p^2) as follows: to compare x = x0+x1\*i
-with y = y0+y1\*i assuming all coordinates are in [0, p) we compare x0
-with y0, and, if they are equal, compare x1 with y1. This is the
-lexographic ordering on the numerical values of (x0, x1) where each value is represented
-in the range [0, p).
+modified top bit. This y value determines two possible x coordinates,
+namely -x and x.  We order the elements of GF(p^2) as follows: to
+compare x = x0+x1\*i with y = y0+y1\*i assuming all coordinates are in
+[0, p) we compare x0 with y0, and, if they are equal, compare x1 with
+y1. This is the lexographic ordering on the numerical values of (x0,
+x1) where each value is represented in the range [0, p).
 
-It is 0 if the smaller possible x value is correct, and 1 if the larger possible x value is correct.
+The high bit of y is changed to 0 if the smaller possible x value is
+correct, and 1 if the larger possible x value is correct.
 
 To decode one must remember the top bit, mask
 it to zero, and interpret the 16 bytes as the y coordinate as stated
@@ -286,7 +291,7 @@ Algorithm 8 from [SQRT].
 ~~~~~
    InvSqrt(a+b*i):
         if b = 0:
-            t = a^((5p-11)/4)
+            t = a^((p-3)/4)
             if a*t^2=1:
                return t+0*i
             else:
@@ -308,12 +313,18 @@ Algorithm 8 from [SQRT].
              return (x0+i*x1)*s
 ~~~~~
 
-To decompress a point take the value of y, and compute y^2-1\*invsqr((y^2-1)*(dy^2-1)). This
-is one possible x value, its negation is the other. The top bit is 0 if the smaller one under
-the defined ordering above is correct, and 1 otherwise.
+To decompress a point take the value of y, and compute
+y^2-1\*invsqr((y^2-1)*(dy^2-1)). This is one possible x value, its
+negation is the other. The top bit is 0 if the smaller one under the
+defined ordering above is correct, and 1 otherwise.
 
-This point compression format is from [SchnorrQ], and the algorithm there may be used instead to
-compute the x coordinates.
+This point compression format is from [SchnorrQ], and the similar
+algorithm there MAY be used instead to compute the x coordinates. Any
+method to decompress points MAY be used provided it computes the
+correct answers. We call the operation of compressing a point P
+Compress(P), and decompression Expand(S). Expand(Compress(P))=P for
+all P on the curve, and Compress(Expand(S))=S if and only if S is a
+valid expansion.
 
 [TODO: insert code?, align compression schemes]
 
@@ -343,7 +354,7 @@ Sy = 1
 
 for t = 255 down to 0 do:
   m_t = (m >> t) & 1
-  
+
   // Constant-time selection; see below
   Axy = cselect(m_t, Pxy, 1)
   Ayx = cselect(m_t, Pyx, 1)
@@ -385,7 +396,7 @@ Sz = 1 / Sz
 Sx = Sx * Sz
 Sy = Sy * Sz
 
-Return (Sx, Sy)
+return (Sx, Sy)
 ~~~~~
 
 The cselect function returns its second or third argument depending on whether
@@ -399,8 +410,8 @@ This algorithm takes a scalar m and a point P, which is an N torsion point, and 
 It computes phi(P), psi(P), and
 psi(phi(P)), where phi and psi are endomorphisms, and then computes
 [m]\*P = [a_0]\*P + [a_1]\*phi(P) + [a_2]\*psi(P) + [a_3]\*psi(phi(P)), where a_0, a_1,
-a_2, and a_3 are computed as described below. This multiexponentation is computed
-via recoding that reduces the number of additions and doublings to merely 64 of each.
+a_2, and a_3 are short scalars that depend on M. This multiexponentation is then computed
+using a small table and 64 doublings and additions after recoding a_0, a_1, a_2 and a_3.
 The algorithm is considerably faster then the naive one listed above.
 In its description we make use of constants listed in the appendix.
 
@@ -420,6 +431,12 @@ T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
 representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
 R4 is (X,Y,Z). R2 representation was introduced in [Ed25519] to accelerate
 additions.
+
+All points sent out over the wire are converted to affine form and compressed.
+To compress a point (X,Y,Z, Ta, Tb) compute F=1/Z, x=X*F, y=Y*F, pack y into 32 bytes,
+and determine which of x and -x is smaller. If x, the top bit of the packed
+value of y should be zero, and if -x, it should be 1. An affine point (x,y)
+is (X, Y, 1, X, Y) in R1 form.
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
 addition, we first define ADD_core that takes an R2 and R3 point and
@@ -481,9 +498,11 @@ tau_dual(chi(tau(Q))).  Below, we present procedures for tau,
 tau_dual, upsilon and chi, adapted from [FourQlib]. Tau_dual produces
 an R1 point, while the other proceedures produce projective
 coordinates. Nota Bene: tau produces points on a different curve,
-while upsilon and chi are endomorphisms on that different curve. As a
-result the intermediate results do not satisfy the equations of the
-curve E. Implementors who wish to check the correctness of these
+while upsilon and chi are endomorphisms on that different curve. Tau and
+tau_dual are the isogenies mentioned in the mathematical background above.
+
+As a result the intermediate results do not satisfy the equations of
+the curve E. Implementors who wish to check the correctness of these
 intermediate results are advised to read the [Curve4Q] paper to
 discover which formulas are satisfied by each set of inputs and
 output.
@@ -531,22 +550,22 @@ upsilon(X1, Y1, Z1):
    M = cphi3*B
    N = (L+M)*(L-M)
    Y2 = conj(cphi5*D*N*(H+cphi6*G+cphi7*F))
-   Z2 = conj(B*K*N)                                      
+   Z2 = conj(B*K*N)
 return(X2, Y2, Z2)
 ~~~~
 
 ~~~~
 chi(X1, Y1, Z1):
-   A = conj(X1)  
-   B = conj(Y1) 
-   C = conj(Z1)^2   
-   D = A^2 
-   F = B^2 
+   A = conj(X1)
+   B = conj(Y1)
+   C = conj(Z1)^2
+   D = A^2
+   F = B^2
    G = B*(D+cpsi2*C)
    H = -(D+cpsi4*C)
    X2 = cpsi1*A*C*H
    Y2 = G*(D+cpsi3*C)
-   Z2 = G*H 
+   Z2 = G*H
 return(X2, Y2, Z2)
 ~~~~
 
@@ -560,14 +579,14 @@ convert these points to R3 for the next step.
 The 8 points in the table are generated using ADD_core as follows:
 
 ~~~~~
-T[0] is P in R2 
+T[0] is P in R2
 T[1] is T[0]+Q  (P+Q)
 Convert T[1] to R2
 T[2] is T[0]+R  (P+R)
 Convert T[2] to R2
 T[3] is T[1]+R  (P+Q+R)
 Convert T[3] to R2
-T[4] is T[0]+S  (P+S)  
+T[4] is T[0]+S  (P+S)
 Convert T[4] to R2
 T[5] is T[1]+S  (P+Q+S)
 Convert T[5] to R2
@@ -579,9 +598,10 @@ Convert T[7] to R2
 
 ### Scalar Decomposition and Recoding
 
-This stage has two parts. The first is to decompose the scalar into four small integers, the second
-is to encode these integers into an equivalent form satisfying certain properties, which will be what is used
-by the multiplication algorithm.
+This stage has two parts. The first is to decompose the scalar into
+four small integers, the second is to encode these integers into an
+equivalent form satisfying certain properties, that is then used to
+compute the scalar multiplication.
 
 This decomposition uses another bunch of constants defining four
 vectors with integer coordinates b1, b2, b3, b4. These constants are
@@ -592,9 +612,9 @@ Let c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 +
 b4. Next compute ti = floor(li\*m/2^256) for 1 between 1 and 4, and
 then compute a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 -
 t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
-coordinate: this is the one fed into the scalar recoding
-step. Each element of the vector is 64 bits after this calculation, and so the ti and
-m can be truncated to 64 bits during this calculation (but not the
+coordinate: this is the one fed into the scalar recoding step. Each
+element of the vector is 64 bits after this calculation, and so the ti
+and m can be truncated to 64 bits during this calculation (but not the
 calculation of ti itself!)
 
 The second step takes the four 64 bit integers a1, a2, a3, a4 from the
@@ -617,18 +637,24 @@ d[64]=a2+2a3+4a
 
 ### Point Multiplication
 
-We now describe the full algorithm for computing point multiplication. On inputs m and P, the algorithm first computes the 
-precomputed table T with 8 points (see "Table Precomputation") and then carries out the scalar decomposition and scalar recoding 
-to produce the two arrays m[0]..m[64] and d[0]..d[64\] (see "Scalar Decomposition and Recoding"). 
+We now describe the full algorithm for computing point
+multiplication. On inputs m and P, the algorithm first computes the
+precomputed table T with 8 points (see "Table Precomputation") and
+then carries out the scalar decomposition and scalar recoding to
+produce the two arrays m[0]..m[64] and d[0]..d[64\] (see "Scalar
+Decomposition and Recoding").
 
-Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then the multiplication is completed by the following pseudocode:
+Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then the
+multiplication is completed by the following pseudocode:
 
 ~~~~~
 
-Q = s[64]*T[d[64]] in R4
+Q = s[64]*T[d[64]]
+Convert Q to R4
 for i=63 to 0 do:
     Q = DBL(Q)
     Q = ADD(Q, s[i]*T[di])
+    Convert Q to R4
 return Q
 
 ~~~~~
@@ -652,10 +678,10 @@ Diffie-Hellman with cofactor.
 
 ~~~
 DH(m, P):
-      Check that P is on the curve: if not return failure
+      Check if  P is on the curve: if it is not return
       Q = [392]*P
       Compute [m]*Q with the optimized multiplication algorithm or any other
-return [m]*Q
+return [m]*Q in affine coordinates
 ~~~~
 
 Note that the multiplication by the
@@ -668,15 +694,20 @@ N-torsion point, and therefore the scalar recoding is not correct.
 
 Two users, Alice and Bob, can carry out the following steps to derive
 a shared key: both pick a random string of 32 bytes, mA and mB
-respectively. Alice computes the public key A = DH(mA, G), and Bob
-computes the public key B = DH(mB, G).  Each of these is serialized to
-33 bytes. They exchange A and B, and then Alice computes KAB = DH(mA,
-B) while Bob computes KBA = DH(mB, A), which produces K = KAB = KBA.
+respectively. Alice computes the public key A = Compress(DH(mA, G)),
+and Bob computes the public key B = Compress(DH(mB, G)). They exchange
+A and B, and then Alice computes KAB = DH(mA, Expand(B)) while Bob
+computes KBA = DH(mB, Expand(A)), which produces the shared point K =
+KAB = KBA.
+
+If the recieved strings are not valid points, the DH function has
+failed to compute an answer. Implementations SHOULD return a random 32
+byte string as well as return an error, to prevent bugs when
+applications ignore return codes. They MUST signal an error.
 
 The y coordinate of K, represented as a 16 byte little endian number
-with top bit clear, is the shared secret. The x coordinate doesn't
-matter, and indeed, ladder based implementations do not need to
-implement x coordinate recovery, but MUST validate inpute points.
+with top bit clear, is the shared secret. The x coordinate computed
+doesn't matter for the value of this shared secret.
 
 The computations above can be directly carried out using the optimized
 point multiplication algorithm. Public keys can be computed using
@@ -685,7 +716,7 @@ performance significantly at the expense of storing a precomputed
 table.  Implementations MAY use any method to carry out these
 calculations, provided that it agrees with the above function on all
 inputs and failure cases, and does not leak information about secret
-keys. For an example, refer to the constant-time fixed-base
+keys. For example, refer to the constant-time fixed-base
 multiplication algorithm implemented in [FourQlib].
 
 Curve4Q MUST NOT be used with ordinary Diffie-Hellman, but MUST
@@ -722,19 +753,20 @@ ensure that the operations used do in fact avoid leaking information.
 If private scalars are not reused in the Diffie-Hellman protocol, the
 security against side channel attacks is increased. Protocols which
 require contributory behavior such as TLS 1.2 [TLS] and certain other
-protocols MUST check that the computed shared secret is not the
+protocols MUST check that the computed shared point is not the
 identity, and if it is MUST signal failure.
 
 #Acknowledgements
 
-We thank Patrick Longa for his invaluable comments and suggestions, as well as contributions to the text.
+We thank Patrick Longa for his invaluable comments and suggestions, as
+well as contributions to the text.
 
 --- back
 
 # Constants
 ctau1= 221360928884514619410*i + 33754435779700894835198039471158097091
 
-ctaudual1 = 170141183460469231510326374831369486353*i + 99231301967130569661901792840482943028
+ctaudual1 = 170141183460469231510326374831369486353*i+ 99231301967130569661901792840482943028
 
 cphi0 = 49615650983565284830950896420241471514*i + 110680464442257309687
 
@@ -764,6 +796,8 @@ cpsi3 = 101947809620085063283442671593521101409*i + 110680464442257309705
 
 cpsi4 = 68193373840384168448244632122363004318*i + 170141183460469231621006839273626796022
 
+d = 0x5e472f846657e0fcb3821488f1fc0c8d*i + 0x00000000000000e40000000000000142
+
 l1 = 50127518246259276682880317011538934615153226543083896339791
 
 l2 = 22358026531042503310338016640572204942053343837521088510715
@@ -780,8 +814,9 @@ b2 = [2110318963211420372, -1, 1, 2727991412926801872]
 b3 = [1705647224544756482, 199320682881407569,
    -3336360048424633503, 765171327772315031]
 
-b4 = [1400113754146392127, 3540637644719456050, -471270406870313397, -1789345740969872106]
+b4 = [1400113754146392127, 3540637644719456050,
+-471270406870313397, -1789345740969872106]
 
-Gx = 0x1A3472237C2FB305286592AD7B3833AA+i*0x1E1F553F2878AA9C96869FB360AC77F6
+Gx = 0x1E1F553F2878AA9C96869FB360AC77F6*i + 0x1A3472237C2FB305286592AD7B3833AA
 
-Gy = 0x0E3FEE9BA120785AB924A2462BCBB287+i*0x6E1C4AF8630E024249A7C344844C8B5C
+Gy = 0x6E1C4AF8630E024249A7C344844C8B5C*i + 0x0E3FEE9BA120785AB924A2462BCBB287
