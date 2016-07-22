@@ -139,18 +139,19 @@ informative:
        title: The Transport Layer Security (TLS) Protocol Version 1.2
        author:
           -
-              ins: Eric Rescorla
+              ins: E. Rescorla
           -
-              ins: Tim Dierks
+              ins: T. Dierks
       
 --- abstract
 
-This document specifies an twisted Edwards curve defined over a quadratic
-extension of a prime field that offers the fastest known
+This document specifies an twisted Edwards curve defined over a
+quadratic extension of a prime field that offers the fastest known
 Diffie-Hellman key agreements with 128 bit security.  It is two times
-faster than Curve25519, and when not using endomorphisms 1.2 percent
+faster than Curve25519, and when not using endomorphisms 1.2 times
 faster.  This curve is the only known curve with a four dimensional
-scalar decomposition over a quadratic extension of GF(2^127-1).
+scalar decomposition over GF((2^127-1)^2) and large prime-order
+subgroup.
 
 --- middle
 
@@ -205,11 +206,13 @@ where N is the following 246-bit prime:
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
-This group is isomorphic to the Jacobian of points on the isogenous elliptic curve as explained
-in [Curve4Q]. It posseses efficiently computable endomorphisms as a result of the elliptic curve being
-isogenous to its Galois conjugate, as well as having complex multiplication. As a result it is possible
-to simultaneously apply the endomorphisms from [GLV] and those in the style of [GLS] to achieve a four
-dimensional decomposition of scalars.
+This group is isomorphic to the Jacobian of points on an isomorphic
+elliptic curve over GF(p^2) as explained in [Curve4Q]. The elliptic
+curve is isogenous to its Galois conjugate, and has complex
+multiplication. These produce two different endormorphisms on E, both
+efficiently computational As a result it is possible to simultaneously
+apply the endomorphisms from [GLV] and those in the style of [GLS] to
+achieve a four dimensional decomposition of scalars.
 
 # Curve Points
 
@@ -223,24 +226,17 @@ describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, whe
 of GF(p).
 
 Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
-serialized in a compressed form as the representation of y whose high bit
-is set according to the sign of x: 0 if the lexographically smaller (when serialized) of
-the two x coordinates is the right one, 1 if not.
+serialized in a compressed form as the representation of y whose high
+bit is the low bit of x. To decode one must remember the top bit, mask
+it to zero, and interpret the 16 bytes as the y coordinate as stated
+above. The top bit is used to determine the x coordinate in
+decompression.
 
 ~~~~~
 |--------------- y ---------------|
 |       y0     |0|       y1     |s|
 |..............|.|..............|.|
 ~~~~~
-
-It may also be serialized in an uncompressed form as the representation of y followed by the representation of x:
-
-~~~~~
-|--------------- y ---------------|-------------- x -------------|
-|       y0     |0|       y1     |0|       x0    |0|      x1    |0|
-|..............|.|..............|.|.............|.|............|0|
-~~~~~
-
 
 Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of GF(p^2). Addition of A and B is performed coordinate-wise: 
 A+B = (a0+b0) + (a1+b1)\*i, as well as subtraction: A-B = (a0-b0) + (a1-b1)\*i. Multiplication is similarly simple: 
@@ -284,45 +280,12 @@ Algorithm 8 from [SQRT].
              return (x0+i*x1)*s
 ~~~~~
 
-To decompress a point take the value of y (by clearing the high bit,
-and reading in the little-endian number), and compute y^2-1\*invsqr((y^2-1)*(dy^2-1)).
+To decompress a point take the value of y, and compute y^2-1\*invsqr((y^2-1)*(dy^2-1)). This
+is one possible x value, its negation is the other. Whichever one of these two values has
+the low bit agreeing with the auxilliary bit in the compressed point representation is the
+correct x coordinate.
 
-In the Python code samples below, we represent elements of GF(p^2) as Python
-tuples, with two elements, (x0, x1) = x0 + x1*i.  Likewise, points are
-represented by tuples of field elements (x, y). The identity is represented
-as a point with x coordinate 0 and y coordinate 1. Points are not represented
-in compressed format.
-
-~~~~~
-<CODE BEGINS>
-def decodeLittleEndian(b, bits):
-    return sum([b[i] << 8*i for i in range((bits+7)/8)])
-
-def encodeLittleEndian(b, bits):
-    return bytearray([(x >> (8*i)) & 0xff for i in range(bits >> 3)])
-
-def decodeGFp2(b):
-    x0 = decodeLittleEndian(b, 128)
-    x1 = decodeLittleEndian(b[16:], 128)
-    return (x0, x1)
-
-def encodeGFp2(X):
-    b0 = encodeLittleEndian(X[0], 128)
-    b1 = encodeLittleEndian(X[1], 128)
-    return b0 + b1
-
-def decodePoint(b):
-    Y = decodeGFp2(b)
-    X = decodeGFp2(b[32:])
-    return (X, Y)
-
-def encodePoint(P):
-    B0 = encodeGFp2(P[1])
-    B1 = encodeGFp2(P[0])
-    return B0 + B1
-<CODE ENDS>
-~~~~~
-
+[TODO: insert code?]
 
 # Scalar multiplication
 We now present two algorithms for scalar multiplication on the above curve.
@@ -348,7 +311,7 @@ P2dt = 2 * d * x * y
 Sx = 0
 Sy = 1
 
-for t = 255 down to 0:
+for t = 255 down to 0 do:
   m_t = (m >> t) & 1
   
   // Constant-time selection; see below
@@ -612,7 +575,7 @@ algorithm that computes it. bit(x, n) denotes the nth bit of x.
 
 ~~~~~
 m[64]=-1
-for i=0 to 63 do
+for i=0 to 63 do:
    d[i] = 0
    m[i] = -bit(a1, i+1)
    for j = 2 to 4 do:
@@ -646,21 +609,16 @@ the table T. To negate an R2 point (N, D, E, F) one computes (D, N, E
 constant time, and without differences in the patterns of memory
 accesses depending on which values are used.
 
-The multiplication algorithm above only works properly for N-torsion
-points. Implementations MUST NOT use this algorithm on anything that
-is not an N- torsion point.  Otherwise, it will produce the wrong
-answer, with extremely negative consequences for security.
+The optimized multiplication algorithm above only works properly for
+N-torsion points. Implementations MUST NOT use this algorithm on
+anything that is not known to be an N-torsion point. Otherwise, it
+will produce the wrong answer, with extremely negative consequences
+for security.
 
 # Use of the scalar multiplication primitive for Diffie-Hellman Key Agreement
 
 The above scalar multiplication primitive can be used to implement
-Diffie-Hellman with cofactor.  Note that the multiplication by the
-cofactor 392 does not need to be computed in constant time and, hence,
-it only requires nine doublings and two additions (i.e., one uses the
-binary representation of 392 and computes a double-and-add point
-multiplication scanning bits from left to right).  It MUST NOT be
-computed with the optimized algorithm above, as P is not known to be a
-torsion point, and therefore the scalar recoding is not correct.
+Diffie-Hellman with cofactor.
 
 ~~~
 DH(m, P):
@@ -670,15 +628,25 @@ DH(m, P):
 return [m]*Q
 ~~~~
 
+Note that the multiplication by the
+cofactor 392 does not need to be computed in constant time and, hence,
+it only requires nine doublings and two additions (i.e., one uses the
+binary representation of 392 and computes a double-and-add point
+multiplication scanning bits from left to right).  It MUST NOT be
+computed with the optimized algorithm above, as P is not known to be a
+N-torsion point, and therefore the scalar recoding is not correct.
+
 Two users, Alice and Bob, can carry out the following steps to derive
 a shared key: both pick a random string of 32 bytes, mA and mB
 respectively. Alice computes the public key A = DH(mA, G), and Bob
 computes the public key B = DH(mB, G).  Each of these is serialized to
 33 bytes. They exchange A and B, and then Alice computes KAB = DH(mA,
 B) while Bob computes KBA = DH(mB, A), which produces K = KAB = KBA.
-The first 32 bytes of this shared secret are the key that has been
-derived. The x coordinate is not used. The coordinates of G are in
-the appendix.
+
+The y coordinate of K, represented as a 16 byte little endian number
+with top bit clear, is the shared secret. The x coordinate doesn't
+matter, and indeed, ladder based implementations do not need to
+implement x coordinate recovery, but MUST validate inpute points.
 
 The computations above can be directly carried out using the optimized
 point multiplication algorithm. Public keys can be computed using
@@ -687,7 +655,7 @@ performance significantly at the expense of storing a precomputed
 table.  Implementations MAY use any method to carry out these
 calculations, provided that it agrees with the above function on all
 inputs and failure cases, and does not leak information about secret
-keys.  For an example, refer to the constant-time fixed-base
+keys. For an example, refer to the constant-time fixed-base
 multiplication algorithm implemented in [FourQlib].
 
 Curve4Q MUST NOT be used with ordinary Diffie-Hellman, but MUST
