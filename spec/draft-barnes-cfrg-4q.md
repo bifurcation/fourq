@@ -190,7 +190,7 @@ use. Using curves with endomorphisms reduces the number of group
 operations by enabling scalars to be recoded in shorter forms. By
 using curves over quadratic extensions there are more endomorphism
 families to pick from, and the field operations become more efficient
-compared to prime fields of the same size. The field GF(2^127-1)
+compared to prime fields of the same size. The field GF((2^127-1)^2)
 offers extremely efficient arithmetic as the modulus is a Mersenne
 prime. Together these improvements substantially reduce power
 consumption and computation time.
@@ -230,23 +230,25 @@ N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
 This group is isomorphic to the Jacobian of points on an isogenous
-elliptic curve over GF(p^2) as explained in [Curve4Q]. The elliptic
+elliptic curve over GF(p^2) as explained in [Curve4Q]. This elliptic
 curve is isogenous to its Galois conjugate, and has complex
 multiplication. These produce two different endormorphisms on E, both
-efficiently computational As a result it is possible to simultaneously
+efficiently computable. As a result it is possible to simultaneously
 apply the endomorphisms from [GLV] and those in the style of [GLS] to
 achieve a four dimensional decomposition of scalars.
 
 # Curve Points
 
-Elements a in GF(p) are represented as 16 byte little endian integers which are the numbers in the
-range [0, p). Because they are always less than p, they always have the top bit clear. The 16 bytes
-b[0], b[1],... b[15] represent b[0]+256*b[1]+256^2*b[2]+...+256^15*b[16].
+Elements a in GF(p) are represented as 16 byte little endian integers
+which are the numbers in the range [0, p). Because they are always
+less than p, they always have the top bit clear. The 16 bytes b[0],
+b[1],... b[15] represent b[0]+256*b[1]+256^2*b[2]+...+256^15*b[16].
 
-An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation of the encodings 
-for x0 and x1, that is 32 bytes.  Implementations will use whatever internal representation they desire, but we will 
-describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, where x0 and x1 are elements 
-of GF(p).
+An element x0 + x1\*i of GF(p^2) is represented on the wire by the
+concatenation of the encodings for x0 and x1, that is 32 bytes.
+Implementations will use whatever internal representation they desire,
+but we will describe the operations on elements of GF(p^2) assuming
+that x = x0 + x1\*i, where x0 and x1 are elements of GF(p).
 
 Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
 serialized in a compressed form as the representation of y with a
@@ -271,11 +273,15 @@ decompression.
 |..............|.|..............|.|
 ~~~~~
 
-Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of GF(p^2). Addition of A and B is performed coordinate-wise: 
-A+B = (a0+b0) + (a1+b1)\*i, as well as subtraction: A-B = (a0-b0) + (a1-b1)\*i. Multiplication is similarly simple: 
-A\*B = (a0\*b0-a1\*b1) + (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1\*b1) + ((a0+a1)\*(b0+b1)-a0\*b0-a1\*b1)\*i.
-Squaring A^2 is computed as (a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is computed as a0/(a0^2+a1^2) - i\*a1/(a0^2+a1^2). 
-Lastly, there is a field automorphism conj(A) = a0 - a1\*i.
+Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of
+GF(p^2). Addition of A and B is performed coordinate-wise: A+B =
+(a0+b0) + (a1+b1)\*i, as is subtraction: A-B = (a0-b0) +
+(a1-b1)\*i. Multiplication is computed as: A\*B = (a0\*b0-a1\*b1)
++ (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1\*b1) +
+((a0+a1)\*(b0+b1)-(a0\*b0+a1\*b1))\*i.  Squaring A^2 is computed as
+(a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is computed as
+a0/(a0^2+a1^2) - i\*a1/(a0^2+a1^2).  Lastly, there is a field
+automorphism conj(A) = a0 - a1\*i.
 
 Inversion of nonzero elements of GF(p) can be computed in
 constant-time using one exponentiation via Fermat's Little Theorem:
@@ -321,8 +327,8 @@ defined ordering above is correct, and 1 otherwise.
 This point compression format is from [SchnorrQ], and the similar
 algorithm there MAY be used instead to compute the x coordinates. Any
 method to decompress points MAY be used provided it computes the
-correct answers. We call the operation of compressing a point P
-Compress(P), and decompression Expand(S). Expand(Compress(P))=P for
+correct answers. We call the operation of compressing a point P into
+32 bytes Compress(P), and decompression Expand(S). Expand(Compress(P))=P for
 all P on the curve, and Compress(Expand(S))=S if and only if S is a
 valid expansion.
 
@@ -333,10 +339,11 @@ We now present two algorithms for scalar multiplication on the above curve.
 
 ## Baseline Point Multiplication Algorithm
 
-The procedure presented here represents a constant-time implementation of
-"textbook" scalar multiplication on the curve.  It is presented mainly as a
-reference for implementers who might want a simpler implementation. The algorithm
-in the next section provides substantially greater performance.
+The procedure presented here represents a constant-time implementation
+of "textbook" scalar multiplication on the curve.  It is presented
+mainly as a reference for implementers who might want a simpler
+implementation. The algorithm in the next section provides
+substantially greater performance.
 
 This code uses doubling and addition formulas from [TwistedRevisited].
 
@@ -406,18 +413,20 @@ to each word of x and y.
 
 ## Optimized Point Multiplication Algorithm
 
-This algorithm takes a scalar m and a point P, which is an N torsion point, and computes [m]\*P.
-It computes phi(P), psi(P), and
-psi(phi(P)), where phi and psi are endomorphisms, and then computes
-[m]\*P = [a_0]\*P + [a_1]\*phi(P) + [a_2]\*psi(P) + [a_3]\*psi(phi(P)), where a_0, a_1,
-a_2, and a_3 are short scalars that depend on M. This multiexponentation is then computed
-using a small table and 64 doublings and additions after recoding a_0, a_1, a_2 and a_3.
-The algorithm is considerably faster then the naive one listed above.
-In its description we make use of constants listed in the appendix.
+This algorithm takes a scalar m and a point P, which is an N torsion
+point, and computes [m]\*P.  It computes phi(P), psi(P), and
+psi(phi(P)), where phi and psi are endomorphisms defined below, and
+then computes [m]\*P = [a_1]\*P + [a_2]\*phi(P) + [a_3]\*psi(P) +
+[a_4]\*psi(phi(P)), where a_1, a_2, a_3, and a_4 are short scalars
+that depend on m. This multiexponentation is then computed using a
+small table and 64 doublings and additions after recoding a_1, a_2,
+a_3 and a_4.  The algorithm is considerably faster then the naive one
+listed above.
 
-We describe each operation seperately: the formulas for point addition and doubling,
-the computation of the endomorphisms, the scalar decompositon and recoding, and lastly
-the computation of the final results.
+We describe each operation seperately: the formulas for point addition
+and doubling, the computation of the endomorphisms, the scalar
+decompositon and recoding, and lastly the computation of the final
+results. Each section refers to constants listed in an appendix.
 
 ### Alternative Point Representations and Addition Laws
 
@@ -432,21 +441,14 @@ representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
 R4 is (X,Y,Z). R2 representation was introduced in [Ed25519] to accelerate
 additions.
 
-All points sent out over the wire are converted to affine form and compressed.
-To compress a point (X,Y,Z, Ta, Tb) compute F=1/Z, x=X*F, y=Y*F, pack y into 32 bytes,
-and determine which of x and -x is smaller. If x, the top bit of the packed
-value of y should be zero, and if -x, it should be 1. An affine point (x,y)
-is (X, Y, 1, X, Y) in R1 form.
-
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
 addition, we first define ADD_core that takes an R2 and R3 point and
 produces an R1 point, and then use it to define a point addition (ADD)
 which takes an R1 and R2 point as inputs, converts the R1 point to R3,
 and then executes ADD_core. Exposing these operations and the multiple
 representations helps save time during table precomputation and the
-actual point multiplication by avoiding redundant
-computations. Conversion between point representations is
-straightforward.
+multiexponentation by avoiding redundant computations. Conversion
+between point representations is straightforward.
 
 Below, we list the explicit formulas for the required point
 operations. These formulas were adapted from [Twisted] and [TwistedRevisited].
@@ -684,13 +686,15 @@ DH(m, P):
 return [m]*Q in affine coordinates
 ~~~~
 
-Note that the multiplication by the
-cofactor 392 does not need to be computed in constant time and, hence,
-it only requires nine doublings and two additions (i.e., one uses the
-binary representation of 392 and computes a double-and-add point
-multiplication scanning bits from left to right).  It MUST NOT be
-computed with the optimized algorithm above, as P is not known to be a
-N-torsion point, and therefore the scalar recoding is not correct.
+Note that the multiplication by the cofactor 392 does not need to be
+computed in constant time and, hence, it only requires nine doublings
+and two additions (i.e., one uses the binary representation of 392 and
+computes a double-and-add point multiplication scanning bits from left
+to right).  It MUST NOT be computed with the optimized algorithm
+above, as P is not known to be a N-torsion point, and therefore the
+scalar recoding is not correct. The role of the seperate
+multiplication by 392 is to ensure that Q is an N-torsion point so
+that the optimized algorithm above may be used.
 
 Two users, Alice and Bob, can carry out the following steps to derive
 a shared key: both pick a random string of 32 bytes, mA and mB
@@ -709,15 +713,13 @@ The y coordinate of K, represented as a 16 byte little endian number
 with top bit clear, is the shared secret. The x coordinate computed
 doesn't matter for the value of this shared secret.
 
-The computations above can be directly carried out using the optimized
-point multiplication algorithm. Public keys can be computed using
-fixed-base multiplications via comb-based methods, which improve
-performance significantly at the expense of storing a precomputed
-table.  Implementations MAY use any method to carry out these
+Implementations MAY use any method to carry out these
 calculations, provided that it agrees with the above function on all
 inputs and failure cases, and does not leak information about secret
 keys. For example, refer to the constant-time fixed-base
-multiplication algorithm implemented in [FourQlib].
+multiplication algorithm implemented in [FourQlib] to accelerate
+the computation of DH(m, G), or to the algorithms implemented
+in [FourQlib] without the use of isogenies.
 
 Curve4Q MUST NOT be used with ordinary Diffie-Hellman, but MUST
 always be used for Diffie-Hellman with cofactor.
@@ -733,7 +735,9 @@ defined over extension fields of degree greater then two over large
 characteristic fields, but so far he best known attacks on elliptic
 curves over quadratic extensions remain the generic algorithms for
 discrete logs. On Curve 4Q these attacks take on the order of 2^120
-group operations to compute a single discrete logarithm.
+group operations to compute a single discrete logarithm. The additional
+endomorphisms have large order, and so cannot be used to accelerate
+generic attacks.
 
 Implementations in the context of Diffie-Hellman (and similar
 applications) MUST check that points input to scalar multiplication
@@ -764,7 +768,7 @@ well as contributions to the text.
 --- back
 
 # Constants
-ctau1= 221360928884514619410*i + 33754435779700894835198039471158097091
+ctau1 = 221360928884514619410*i + 33754435779700894835198039471158097091
 
 ctaudual1 = 170141183460469231510326374831369486353*i+ 99231301967130569661901792840482943028
 
