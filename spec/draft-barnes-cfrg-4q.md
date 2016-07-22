@@ -172,9 +172,9 @@ This document specifies an twisted Edwards curve defined over a
 quadratic extension of a prime field that offers the fastest known
 Diffie-Hellman key agreements with 128 bit security.  It is two times
 faster than Curve25519, and when not using endomorphisms 1.2 times
-faster.  This curve is the only known curve with a four dimensional
-scalar decomposition over GF((2^127-1)^2) and large prime-order
-subgroup.
+faster.  This curve is isogenous to the only know elliptic curve with
+a four dimensional scalar decomposition over GF((2^127-1)^2) and large
+prime-order subgroup.
 
 --- middle
 
@@ -198,11 +198,12 @@ consumption and computation time.
 This document specifies a twisted Edwards curve ("Curve4Q"), proposed
 in [Curve4Q], that supports constant-time, exception-free scalar
 multiplications that are faster than any alternative. As described in
-[Curve4Q], Curve4Q is the only known curve that permits a four
-dimensional decomposition over the highly efficient field GF(p^2) with
-p = 2^127 - 1 while offering close to 128 bits of security.  This
-"uniqueness" allays concerns about selecting curves vulnerable to
-undisclosed attacks.
+[Curve4Q], Curve4Q is the only known elliptic curve that permits a
+four dimensional decomposition over the highly efficient field GF(p^2)
+with p = 2^127 - 1 and has a prime order subgroup of order
+approximately 2^246. No known elliptic curve with such a decomposition has a
+larger subgroup.  This "uniqueness" allays concerns about selecting
+curves vulnerable to undisclosed attacks.
 
 # Mathematical Prerequisites
 
