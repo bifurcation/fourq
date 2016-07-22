@@ -106,6 +106,14 @@ informative:
               ins: G. Adj
            -
               ins: F. Rodriguez-Henriquez
+    SchnorrQ:
+       target: "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/SchnorrQ.pdf"
+       title: "SchnorrQ"
+       author:
+          -
+             ins: C. Costello
+          -
+             ins: P. Longa
 
     TwistedRevisited:
        target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
@@ -226,8 +234,17 @@ describe the operations on elements of GF(p^2) assuming that x = x0 + x1\*i, whe
 of GF(p).
 
 Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
-serialized in a compressed form as the representation of y whose high
-bit is the low bit of x. To decode one must remember the top bit, mask
+serialized in a compressed form as the representation of y with a
+modified top bit. This y value determines two possible x coordinates.
+We order the elements of GF(p^2) as follows: to compare x = x0+x1\*i
+with y = y0+y1\*i assuming all coordinates are in [0, p) we compare x0
+with y0, and, if they are equal, compare x1 with y1. This is the
+lexographic ordering on the numerical values of (x0, x1) where each value is represented
+in the range [0, p).
+
+It is 0 if the smaller possible x value is correct, and 1 if the larger possible x value is correct.
+
+To decode one must remember the top bit, mask
 it to zero, and interpret the 16 bytes as the y coordinate as stated
 above. The top bit is used to determine the x coordinate in
 decompression.
@@ -281,11 +298,12 @@ Algorithm 8 from [SQRT].
 ~~~~~
 
 To decompress a point take the value of y, and compute y^2-1\*invsqr((y^2-1)*(dy^2-1)). This
-is one possible x value, its negation is the other. Whichever one of these two values has
-the low bit agreeing with the auxilliary bit in the compressed point representation is the
-correct x coordinate.
+is one possible x value, its negation is the other. The top bit is 0 if the smaller one under
+the defined ordering above is correct, and 1 otherwise.
 
-[TODO: insert code?]
+This point compression format is from [SchorrQ].
+
+[TODO: insert code?, align compression schemes]
 
 # Scalar multiplication
 We now present two algorithms for scalar multiplication on the above curve.
@@ -659,8 +677,7 @@ keys. For an example, refer to the constant-time fixed-base
 multiplication algorithm implemented in [FourQlib].
 
 Curve4Q MUST NOT be used with ordinary Diffie-Hellman, but MUST
-always be used for Diffie-Hellman with cofactor when Diffie-Hellman is
-used.
+always be used for Diffie-Hellman with cofactor.
 
 # IANA Considerations
 
@@ -698,7 +715,7 @@ identity, and if it is MUST signal failure.
 
 #Acknowledgements
 
-We thank Patrick Longa for his invaluable comments and suggestions.
+We thank Patrick Longa for his invaluable comments and suggestions, as well as contributions to the text.
 
 --- back
 
