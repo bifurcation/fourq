@@ -29,6 +29,7 @@ informative:
     Curve4Q:
       target: "https://eprint.iacr.org/2015/565.pdf"
       title: "FourQ: four-dimensional decompositions on a Q-curve over the Mersenne prime"
+      date: 2016
       author:
          -
               ins: C. Costello
@@ -37,6 +38,7 @@ informative:
     Invsqr:
         target: "http://eprint.iacr.org/2012/309.pdf"
         title: Fast and compact elliptic-curve cryptography
+        date: 2012
         author:
            -
               ins: M. Hamburg
@@ -52,6 +54,7 @@ informative:
     Ed25519:
        target: "https://ed25519.cr.yp.to/ed25519-20110926.pdf"
        title: "High-speed high-security signatures"
+       date: 2011
        author:
           -
               ins: D.J. Bernstein
@@ -64,8 +67,9 @@ informative:
           -
               ins: B.-Y. Yang
     EMS:
-       target: "https://tools.ietf.org/html/rfc7627"
+       target: "Https://tools.ietf.org/html/rfc7627"
        title: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
+       date: 2015
        author:
           -
               ins: K. Bhargavan
@@ -81,6 +85,7 @@ informative:
     GLV:
        target: "https://www.iacr.org/archive/crypto2001/21390189.pdf"
        title: "Faster Point Multiplication on Elliptic Curves with Efficient Endomorphisms"
+       date: 2001
        author:
           -
              ins: R. P. Gallant
@@ -91,6 +96,7 @@ informative:
     GLS:
         target: "https://www.iacr.org/archive/eurocrypt2009/54790519/54790519.pdf"
         title: "Endomorphisms for Faster Elliptic Curve Cryptograpjy on a Large Class of Curves"
+        date: 2009
         author:
            -
              ins: S. D. Galbraith
@@ -101,6 +107,7 @@ informative:
     SQRT:
         target: "https://eprint.iacr.org/2012/685.pdf"
         title: "Square Root Computation over Even Extension Fields"
+        date: 2012
         author:
            -
               ins: G. Adj
@@ -109,6 +116,7 @@ informative:
     SchnorrQ:
        target: "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/SchnorrQ.pdf"
        title: "SchnorrQ"
+       date: 2016
        author:
           -
              ins: C. Costello
@@ -118,6 +126,7 @@ informative:
     TwistedRevisited:
        target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
        title: Twisted Edwards Curves Revisited
+       date: 2008
        author:
           -
               ins: H. Hisil
@@ -131,6 +140,7 @@ informative:
     Twisted:
        target: "http://eprint.iacr.org/2008/013.pdf"
        title: Twisted Edwards Curves
+       date: 2008
        author:
           -
               ins: D. J. Bernstein
@@ -145,6 +155,7 @@ informative:
     TLS:
        target: "https://tools.ietf.org/html/rfc5246"
        title: The Transport Layer Security (TLS) Protocol Version 1.2
+       date: 2008
        author:
           -
               ins: E. Rescorla
@@ -301,7 +312,8 @@ To decompress a point take the value of y, and compute y^2-1\*invsqr((y^2-1)*(dy
 is one possible x value, its negation is the other. The top bit is 0 if the smaller one under
 the defined ordering above is correct, and 1 otherwise.
 
-This point compression format is from [SchorrQ].
+This point compression format is from [SchnorrQ], and the algorithm there may be used instead to
+compute the x coordinates.
 
 [TODO: insert code?, align compression schemes]
 
