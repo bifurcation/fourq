@@ -193,7 +193,8 @@ families to pick from, and the field operations become more efficient
 compared to prime fields of the same size. The field GF((2^127-1)^2)
 offers extremely efficient arithmetic as the modulus is a Mersenne
 prime. Together these improvements substantially reduce power
-consumption and computation time.
+consumption and computation time compared to other proposed
+Diffie-Hellman key exchanges
 
 This document specifies a twisted Edwards curve ("Curve4Q"), proposed
 in [Curve4Q], that supports constant-time, exception-free scalar
@@ -331,105 +332,17 @@ method to decompress points MAY be used provided it computes the
 correct answers. We call the operation of compressing a point P into
 32 bytes Compress(P), and decompression Expand(S). Expand(Compress(P))=P for
 all P on the curve, and Compress(Expand(S))=S if and only if S is a
-valid expansion.
+valid representation of a point.
 
-[TODO: insert code?, align compression schemes]
+Not all 32 byte strings represent valid points. Implementations MUST
+reject invalid points and check that decompression is successful.
 
 # Scalar multiplication
 We now present two algorithms for scalar multiplication on the above curve.
+Both use the same addition and doubling formulas, and one is a simple windowed
+exponentation, while the other uses endomorphisms to accelerate computation.
 
-## Baseline Point Multiplication Algorithm
-
-The procedure presented here represents a constant-time implementation
-of "textbook" scalar multiplication on the curve.  It is presented
-mainly as a reference for implementers who might want a simpler
-implementation. The algorithm in the next section provides
-substantially greater performance.
-
-This code uses doubling and addition formulas from [TwistedRevisited].
-
-~~~~~
-Inputs:
-- A curve point P = (x, y)
-- A 256-bit integer m
-
-Pxy = x + y
-Pyx = y - x
-P2dt = 2 * d * x * y
-
-Sx = 0
-Sy = 1
-
-for t = 255 down to 0 do:
-  m_t = (m >> t) & 1
-
-  // Constant-time selection; see below
-  Axy = cselect(m_t, Pxy, 1)
-  Ayx = cselect(m_t, Pyx, 1)
-  A2dt = cselect(m_t, P2dt, 0)
-
-  XX = Sx * Sx
-  YY = Sy * Sy
-  ZZ = Sz * Sz
-
-  A = Sx + Sy
-  AA = A * A
-  B = XX + YY
-  C = YY - XX
-  D = AA - B
-  E = 2*ZZ - C
-  F = D * E
-  G = B * C
-
-  Txy = F + G
-  Tyx = G - F
-  Tz = C * E
-  Tt = D * B
-
-  TAxy = Txy * Axy
-  TAyx = Tyx * Ayx
-  TAz = Tz + Tz
-  TAt = Tt * A2dt
-
-  H = TAz + TAt
-  I = TAz - TAt
-  K = TAxy + TAyx
-  L = TAxy - TAyx
-
-  Sx = L * I
-  Sy = K * H
-  Sz = H * I
-
-Sz = 1 / Sz
-Sx = Sx * Sz
-Sy = Sy * Sz
-
-return (Sx, Sy)
-~~~~~
-
-The cselect function returns its second or third argument depending on whether
-the first argument is one or zero, respectively.  This function SHOULD be
-implemented in constant time via translation into boolean operations applied
-to each word of x and y.
-
-## Optimized Point Multiplication Algorithm
-
-This algorithm takes a scalar m and a point P, which is an N torsion
-point, and computes [m]\*P.  It computes phi(P), psi(P), and
-psi(phi(P)), where phi and psi are endomorphisms defined below, and
-then computes [m]\*P = [a_1]\*P + [a_2]\*phi(P) + [a_3]\*psi(P) +
-[a_4]\*psi(phi(P)), where a_1, a_2, a_3, and a_4 are short scalars
-that depend on m. This multiexponentation is then computed using a
-small table and 64 doublings and additions after recoding a_1, a_2,
-a_3 and a_4.  The algorithm is considerably faster then the naive one
-listed above.
-
-We describe each operation seperately: the formulas for point addition
-and doubling, the computation of the endomorphisms, the scalar
-decompositon and recoding, and lastly the computation of the final
-results. Each section refers to constants listed in an appendix.
-
-### Alternative Point Representations and Addition Laws
+## Alternative Point Representations and Addition Laws
 
 We use coordinates based on extended twisted Edwards coordinates
 [TwistedRevisited]: the projective tuple (X, Y, Z, T) with Z != 0 and
@@ -492,6 +405,74 @@ ADD_core(N1, D1, E1, F1, N2, D2, Z2, T2):
    Z3 = F*G
 return (X3, Y3, Z3, Ta3, Tb3)
 ~~~~
+
+## Multiplication without endomorphisms
+
+We begin by taking our input P, and computing a table of points
+containing [1]P, [3]P, ... [15]P as follows:
+
+~~~~
+Q = DBL(P)
+T[0] = P
+Convert T[1] to R2 form
+for i=1 to 7:
+    T[i] = ADD(Q,T[i-1])
+    Convert T[i] to R2 form
+~~~~
+
+Next, take m and reduce it modulo N. Then add N if necessary to ensure that m
+is odd. At this point we recode m into a signed digit representation of 63 base
+16 signed, odd, digits. The following algorithm accompishes this task.
+
+~~~~
+for i=0 to 62:
+    d[i] = (m mod 32)-16
+    m = (m - d[i])/32
+~~~~
+
+At this point the computation of the multiplication is straightforward. Note
+that (2*n+1)*P is stored in T[n].
+
+~~~~
+Take d[62]
+Let ind = (abs(d[62])-1)/2
+Let sign = sgn(d[62])
+Q = T[ind]*sign
+Convert Q into R1 form.
+for i from 61 to zero:
+    DBL(Q)
+    DBL(Q)
+    DBL(Q)
+    DBL(Q)
+    ind = abs(d[i]-1)/2
+    sign = sgn(d[i])
+    S = sgn*T[ind]
+    Q = ADD(Q,S)
+return Q
+~~~~
+
+To negate a point (N, D, E, F) in R2 form one computes (D, N, E, -F).
+It is important that this operation and the table lookup be done in constant
+time and without differences in memory access patterns that depend on the
+index or sign.
+
+## Multiplication with endomorphisms
+
+This algorithm computes phi(P), psi(P), and psi(phi(P)), where phi and
+psi are endomorphisms defined below, and then computes [m]\*P =
+[a_1]\*P + [a_2]\*phi(P) + [a_3]\*psi(P) + [a_4]\*psi(phi(P)), where
+a_1, a_2, a_3, and a_4 are short scalars that depend on m. This
+multiexponentation is then computed using a small table and 64
+doublings and additions after recoding a_1, a_2, a_3 and a_4.  The
+algorithm is considerably faster then the one without endomorphisms
+listed above.
+
+We describe each operation seperately: the computation of the
+endomorphisms, the scalar decompositon and recoding, and lastly the
+computation of the final results. Each section refers to constants
+listed in an appendix. These operations make use of the coordinates
+and operations described above.
+
 
 ### Endomorphisms and Isogenies
 
