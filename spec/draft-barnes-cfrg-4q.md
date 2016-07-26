@@ -669,8 +669,8 @@ Diffie-Hellman with cofactor.
 DH(m, P):
       Check if  P is on the curve: if it is not return
       Q = [392]*P
-      Compute [m]*Q with the optimized multiplication algorithm or any other
-return [m]*Q in affine coordinates
+      Compute [m]*Q
+Return [m]*Q in affine coordinates
 ~~~~
 
 Note that the multiplication by the cofactor 392 does not need to be
