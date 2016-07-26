@@ -204,7 +204,7 @@ multiplications that are faster than any alternative. As described in
 four dimensional decomposition over the highly efficient field GF(p^2)
 with p = 2^127 - 1 and has a prime order subgroup of order
 approximately 2^246. No known elliptic curve with such a decomposition has a
-larger subgroup.  This "uniqueness" allays concerns about selecting
+larger prime order subgroup.  This "uniqueness" allays concerns about selecting
 curves vulnerable to undisclosed attacks.
 
 # Mathematical Prerequisites
