@@ -46,6 +46,7 @@ informative:
     FourQlib:
       target: "https://www.microsoft.com/en-us/research/project/fourqlib/"
       title: "FourQlib"
+      date: 2016
       author:
          -
               ins: C. Costello
@@ -172,8 +173,8 @@ This document specifies an twisted Edwards curve defined over a
 quadratic extension of a prime field that offers the fastest known
 Diffie-Hellman key agreements on a group of order approximately 2^246.
 It is two times faster than Curve25519, and when not using
-endomorphisms 1.2 times faster.  This curve is isogenous to the only
-know elliptic curve with a four dimensional scalar decomposition over
+endomorphisms 1.2 times faster.  This curve is the only known Edwards
+curve with a four dimensional scalar decomposition over
 GF((2^127-1)^2) and large prime-order subgroup.
 
 --- middle
@@ -265,13 +266,8 @@ they are equal, compare x1 with y1. This is the lexicographic ordering
 on the numerical values of (x0, x1) where each value is in the range
 [0, p).
 
-The high bit of y is changed to 0 if the smaller possible x value is
-correct, and 1 if the larger possible x value is correct.
-
-To decode one must remember the top bit, mask
-it to zero, and interpret the 16 bytes as the y coordinate as stated
-above. The top bit is used to determine the x coordinate in
-decompression.
+The high bit of a compressed point 0 if the smaller possible x value is
+correct, and 1 if the larger possible x value is correct. 
 
 ~~~~~
 |--------------- y ---------------|
@@ -327,8 +323,9 @@ Algorithm 8 from [SQRT].
 
 To decompress a point take the value of y, and compute
 y^2-1\*invsqr((y^2-1)*(dy^2-1)). This is one possible x value, its
-negation is the other. The top bit is 0 if the smaller one under the
-defined ordering above is intended, and 1 otherwise.
+negation is the other. The top bit of the compressed representation
+is 0 if the smaller one under the defined ordering above is intended,
+and 1 otherwise.
 
 This point compression format is from [SchnorrQ], and the similar
 algorithm there MAY be used instead to compute the x coordinates. Any
@@ -342,6 +339,7 @@ Not all 32 byte strings represent valid points. Implementations MUST
 reject invalid points and check that decompression is successful.
 
 # Scalar multiplication
+
 We now present two algorithms for scalar multiplication on the above curve.
 Both use the same addition and doubling formulas, and one is a simple windowed
 exponentiation, while the other uses endomorphisms to accelerate computation.
@@ -349,15 +347,15 @@ exponentiation, while the other uses endomorphisms to accelerate computation.
 ## Alternative Point Representations and Addition Laws
 
 We use coordinates based on extended twisted Edwards coordinates
-[TwistedRevisited]: the projective tuple (X, Y, Z, T) with Z != 0 and
-T = X * Y/Z corresponds to a point (x, y) satisfying x = X/Z and y =
-Y/Z. The point at infinity is (0,1,1). The following variants are used
-in the optimized scalar multiplication algorithm in order to save
-computations: point representation R1 is given by (X,Y,Z,Ta,Tb), where
-T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
+[TwistedRevisited]: the tuple (X, Y, Z, T) with Z nonzero and Z * T =
+X * Y corresponds to a point (x, y) satisfying x = X/Z and y =
+Y/Z. The point at infinity is (0,1,1). The following slight variants
+are used in the optimized scalar multiplication algorithm in order to
+save computations: point representation R1 is given by (X,Y,Z,Ta,Tb),
+where T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
 representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
-R4 is (X,Y,Z). R2 representation was introduced in [Ed25519] to accelerate
-additions.
+R4 is (X,Y,Z). R2 representation was introduced in [Ed25519] to
+accelerate additions.
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
 addition, we first define ADD_core that takes an R2 and R3 point and
@@ -418,7 +416,7 @@ containing [1]P, [3]P, ... [15]P as follows:
 ~~~~
 Q = DBL(P)
 T[0] = P
-Convert T[1] to R2 form
+Convert T[0] to R2 form
 for i=1 to 7:
     T[i] = ADD(Q,T[i-1])
     Convert T[i] to R2 form
@@ -438,19 +436,18 @@ At this point the computation of the multiplication is straightforward. Note
 that (2*n+1)*P is stored in T[n].
 
 ~~~~
-Take d[62]
 Let ind = (abs(d[62])-1)/2
 Let sign = sgn(d[62])
 Q = T[ind]*sign
 Convert Q into R1 form.
 for i from 61 to zero:
-    DBL(Q)
-    DBL(Q)
-    DBL(Q)
-    DBL(Q)
+    Q = DBL(Q)
+    Q = DBL(Q)
+    Q = DBL(Q)
+    Q = DBL(Q)
     ind = abs(d[i]-1)/2
     sign = sgn(d[i])
-    S = sgn*T[ind]
+    S = sign*T[ind]
     Q = ADD(Q,S)
 return Q
 ~~~~
@@ -603,8 +600,8 @@ then compute a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 -
 t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
 coordinate: this is the one fed into the scalar recoding step. Each
 element of the vector is 64 bits after this calculation, and so the ti
-and m can be truncated to 64 bits before computing a and all intermediate
-values are 64 bits.
+and m can be truncated to 64 bits before computing a, and it is safe
+to truncate intermediates during this calculation to 64 bits.
 
 The second step takes the vector v=(v1, v2, v3, v4) from the
 previous step and outputs two arrays m[0]..m[64] and d[0]..d[64]. Each
@@ -667,7 +664,7 @@ Diffie-Hellman with cofactor.
 
 ~~~
 DH(m, P):
-      Check if  P is on the curve: if it is not return
+      Ensure P on curve and if not return FAILURE
       Q = [392]*P
       Compute [m]*Q
 Return [m]*Q in affine coordinates
@@ -679,9 +676,9 @@ and two additions (i.e., one uses the binary representation of 392 and
 computes a double-and-add point multiplication scanning bits from left
 to right).  It MUST NOT be computed with either algorithm above, as P
 is not known to be a N-torsion point, and therefore the scalar
-recoding or taking the scalar mod N will result in the wrong
-answer. The role of the seperate multiplication by 392 is to ensure
-that Q is an N-torsion point so that the algorithms above may
+recoding or ensuring the multiplied value is odd will result in the
+wrong answer. The role of the seperate multiplication by 392 is to
+ensure that Q is an N-torsion point so that the algorithms above may
 be used.
 
 Two users, Alice and Bob, can carry out the following steps to derive
@@ -693,8 +690,9 @@ computes KBA = DH(mB, Expand(A)), which produces the shared point K =
 KAB = KBA.
 
 The y coordinate of K, represented as a 16 byte little endian number
-with top bit clear, is the shared secret. The x coordinate computed
-doesn't matter for the value of this shared secret.
+as in the section "Curve Points" is the shared secret. The x
+coordinate computed doesn't matter for the value of this shared
+secret.
 
 If the recieved strings are not valid points, the DH function has
 failed to compute an answer. Implementations SHOULD return a random 32
@@ -710,8 +708,10 @@ multiplication algorithm implemented in [FourQlib] to accelerate
 the computation of DH(m, G), or to the algorithms implemented
 in [FourQlib] without the use of isogenies.
 
-Curve4Q MUST NOT be used with ordinary Diffie-Hellman, but MUST
-always be used for Diffie-Hellman with cofactor.
+As the cofactor is greater then one, Curve4Q MUST NOT be used with
+ordinary Diffie-Hellman, but MUST always be used for Diffie-Hellman
+with cofactor to avoid missing checks silently resulting in security
+failures.
 
 # IANA Considerations
 
@@ -737,17 +737,13 @@ when the identity is the output of the DH primitive it MUST be
 rejected and failure signaled to higher levels. Notoriously [TLS]
 without [EMS] is such a protocol.
 
-The arithmetic operations and table lookups need to be implemented to
-avoid different memory access patters or timings because of the values
-being operated on. Side-channel analysis is a constantly moving field,
-and implementers must be extremely careful to ensure that the
-operations used do in fact avoid leaking information.
-
-If private scalars are not reused in the Diffie-Hellman protocol, the
-security against side channel attacks is increased. Protocols which
-require contributory behavior such as TLS 1.2 [TLS] and certain other
-protocols MUST check that the computed shared point is not the
-identity, and if it is MUST signal failure.
+The computations need to be implemented without leaking secret values
+to addresses accessed or the total time taken for a computation.
+Side-channel analysis is a constantly moving field, and implementers
+must be extremely careful to ensure that the operations used do in
+fact avoid leaking information. Using independent private scalars for
+each operation is recommended to reduce the impact of side-channel
+attacks.
 
 #Acknowledgements
 
