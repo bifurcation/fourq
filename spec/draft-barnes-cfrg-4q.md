@@ -170,11 +170,11 @@ informative:
 
 This document specifies an twisted Edwards curve defined over a
 quadratic extension of a prime field that offers the fastest known
-Diffie-Hellman key agreements with 128 bit security.  It is two times
-faster than Curve25519, and when not using endomorphisms 1.2 times
-faster.  This curve is isogenous to the only know elliptic curve with
-a four dimensional scalar decomposition over GF((2^127-1)^2) and large
-prime-order subgroup.
+Diffie-Hellman key agreements on a group of order approximately 2^246.
+It is two times faster than Curve25519, and when not using
+endomorphisms 1.2 times faster.  This curve is isogenous to the only
+know elliptic curve with a four dimensional scalar decomposition over
+GF((2^127-1)^2) and large prime-order subgroup.
 
 --- middle
 
@@ -186,15 +186,15 @@ efficient formulas for addition and doubling have substantially
 reduced the cost of elliptic curve operations in terms of field
 operations, the number of group operations involved in scalar
 multiplication has not been reduced in the curves considered for IETF
-use. Using curves with endomorphisms reduces the number of group
-operations by enabling scalars to be recoded in shorter forms. By
-using curves over quadratic extensions there are more endomorphism
-families to pick from, and the field operations become more efficient
-compared to prime fields of the same size. The field GF((2^127-1)^2)
-offers extremely efficient arithmetic as the modulus is a Mersenne
-prime. Together these improvements substantially reduce power
-consumption and computation time compared to other proposed
-Diffie-Hellman key exchanges
+use. Using curves with efficiently computable endomorphisms reduces
+the number of group operations by enabling scalars to be recoded in
+shorter forms. By using curves over quadratic extensions there are
+more endomorphism families to pick from, and the field operations
+become more efficient compared to prime fields of the same size. The
+field GF((2^127-1)^2) offers extremely efficient arithmetic as the
+modulus is a Mersenne prime. Together these improvements substantially
+reduce power consumption and computation time compared to other
+proposed Diffie-Hellman key exchanges
 
 This document specifies a twisted Edwards curve ("Curve4Q"), proposed
 in [Curve4Q], that supports constant-time, exception-free scalar
@@ -231,9 +231,9 @@ is \#E = 2^3 · 7^2 · N, where N is the following 246-bit prime:
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
-This group is isomorphic to the Jacobian of points on an isogenous
-elliptic curve over GF(p^2) as explained in [Curve4Q]. This elliptic
-curve is isogenous to its Galois conjugate, and has complex
+This group is isomorphic to the Jacobian of points on an elliptic
+curve over GF(p^2) as explained in [Curve4Q]. This elliptic curve is
+isogenous to its Galois conjugate, and has complex
 multiplication. These produce two different endormorphisms on E, both
 efficiently computable. As a result it is possible to simultaneously
 apply the endomorphisms from [GLV] and those in the style of [GLS] to
@@ -254,12 +254,16 @@ that x = x0 + x1\*i, where x0 and x1 are elements of GF(p).
 
 Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
 serialized in a compressed form as the representation of y with a
-modified top bit. This y value determines two possible x coordinates,
-namely -x and x.  We order the elements of GF(p^2) as follows: to
-compare x = x0+x1\*i with y = y0+y1\*i assuming all coordinates are in
-[0, p) we compare x0 with y0, and, if they are equal, compare x1 with
-y1. This is the lexographic ordering on the numerical values of (x0,
-x1) where each value is represented in the range [0, p).
+modified top bit to indicate which of two values of x it may be.
+
+This y value determines two possible x coordinates, the roots of the
+curve equation when y is substituted in. To determine the difference
+between these values we introduce an ordering. We order the elements
+of GF(p^2) as follows: to compare x = x0+x1\*i with y = y0+y1\*i
+assuming all coordinates are in [0, p) we compare x0 with y0, and, if
+they are equal, compare x1 with y1. This is the lexicographic ordering
+on the numerical values of (x0, x1) where each value is in the range
+[0, p).
 
 The high bit of y is changed to 0 if the smaller possible x value is
 correct, and 1 if the larger possible x value is correct.
@@ -288,7 +292,7 @@ automorphism conj(A) = a0 - a1\*i.
 Inversion of nonzero elements of GF(p) can be computed in
 constant-time using one exponentiation via Fermat's Little Theorem:
 1/a = a^(p - 2) = a^(2^127 - 3). It is also necessary to compute the
-inverse square roots of elemnts of GF(p) by computing a^((p-3)/4). This
+inverse square roots of elements of GF(p) by computing a^((p-3)/4). This
 computes the reciprocal of a square root of a if one exists, and otherwise
 computes the reciprocal of the square root of -a. The use of this operation
 in accelerating decompression comes from [invsqr].
@@ -324,7 +328,7 @@ Algorithm 8 from [SQRT].
 To decompress a point take the value of y, and compute
 y^2-1\*invsqr((y^2-1)*(dy^2-1)). This is one possible x value, its
 negation is the other. The top bit is 0 if the smaller one under the
-defined ordering above is correct, and 1 otherwise.
+defined ordering above is intended, and 1 otherwise.
 
 This point compression format is from [SchnorrQ], and the similar
 algorithm there MAY be used instead to compute the x coordinates. Any
@@ -340,7 +344,7 @@ reject invalid points and check that decompression is successful.
 # Scalar multiplication
 We now present two algorithms for scalar multiplication on the above curve.
 Both use the same addition and doubling formulas, and one is a simple windowed
-exponentation, while the other uses endomorphisms to accelerate computation.
+exponentiation, while the other uses endomorphisms to accelerate computation.
 
 ## Alternative Point Representations and Addition Laws
 
@@ -360,7 +364,7 @@ addition, we first define ADD_core that takes an R2 and R3 point and
 produces an R1 point, and then use it to define a point addition (ADD)
 which takes an R1 and R2 point as inputs, converts the R1 point to R3,
 and then executes ADD_core. Exposing these operations and the multiple
-representations helps save time during table precomputation and the
+representations helps save time during table precomputation and
 multiexponentation by avoiding redundant computations. Conversion
 between point representations is straightforward.
 
@@ -422,7 +426,7 @@ for i=1 to 7:
 
 Next, take m and reduce it modulo N. Then add N if necessary to ensure that m
 is odd. At this point we recode m into a signed digit representation of 63 base
-16 signed, odd, digits. The following algorithm accompishes this task.
+16 signed, odd, digits. The following algorithm accomplishes this task.
 
 ~~~~
 for i=0 to 62:
@@ -454,7 +458,8 @@ return Q
 To negate a point (N, D, E, F) in R2 form one computes (D, N, E, -F).
 It is important that this operation and the table lookup be done in constant
 time and without differences in memory access patterns that depend on the
-index or sign.
+index or sign. This algorithm MUST NOT be applied to points which are not
+N torsion points: it will produce the wrong answer.
 
 ## Multiplication with endomorphisms
 
@@ -465,9 +470,9 @@ a_1, a_2, a_3, and a_4 are short scalars that depend on m. This
 multiexponentation is then computed using a small table and 64
 doublings and additions after recoding a_1, a_2, a_3 and a_4.  The
 algorithm is considerably faster then the one without endomorphisms
-listed above.
+above.
 
-We describe each operation seperately: the computation of the
+We describe each operation separately: the computation of the
 endomorphisms, the scalar decompositon and recoding, and lastly the
 computation of the final results. Each section refers to constants
 listed in an appendix. These operations make use of the coordinates
@@ -480,13 +485,14 @@ The two endomorphisms phi and psi used to accelerate multiplication
 are computed as phi(Q) = tau_dual(upsilon(tau(Q)) and psi(Q) =
 tau_dual(chi(tau(Q))).  Below, we present procedures for tau,
 tau_dual, upsilon and chi, adapted from [FourQlib]. Tau_dual produces
-an R1 point, while the other proceedures produce projective
-coordinates. Nota Bene: tau produces points on a different curve,
-while upsilon and chi are endomorphisms on that different curve. Tau and
-tau_dual are the isogenies mentioned in the mathematical background above.
+an R1 point, while the other procedures produce projective
+coordinates.
 
-As a result the intermediate results do not satisfy the equations of
-the curve E. Implementors who wish to check the correctness of these
+Nota Bene: tau produces points on a different curve, while upsilon and
+chi are endomorphisms of that different curve. Tau and tau_dual are
+the isogenies mentioned in the mathematical background above.  As a
+result the intermediate results do not satisfy the equations of the
+curve E. Implementers who wish to check the correctness of these
 intermediate results are advised to read the [Curve4Q] paper to
 discover which formulas are satisfied by each set of inputs and
 output.
@@ -583,13 +589,12 @@ Convert T[7] to R2
 ### Scalar Decomposition and Recoding
 
 This stage has two parts. The first is to decompose the scalar into
-four small integers, the second is to encode these integers into an
-equivalent form satisfying certain properties, that is then used to
-compute the scalar multiplication.
+four small integers, the second is to encode these integers into a
+form that can be used to efficiently compute the scalar
+multiplication.
 
-This decomposition uses another bunch of constants defining four
-vectors with integer coordinates b1, b2, b3, b4. These constants are
-64 bit. In addition we have l1, l2, l3, l4 which are long
+This decomposition uses four vectors with 64 bit entries namely b1,
+b2, b3, b4.  In addition we have l1, l2, l3, l4 which are long
 integers used to implement rounding.
 
 Let c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 +
@@ -598,10 +603,10 @@ then compute a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 -
 t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
 coordinate: this is the one fed into the scalar recoding step. Each
 element of the vector is 64 bits after this calculation, and so the ti
-and m can be truncated to 64 bits during this calculation (but not the
-calculation of ti itself!)
+and m can be truncated to 64 bits before computing a and all intermediate
+values are 64 bits.
 
-The second step takes the four 64 bit integers a1, a2, a3, a4 from the
+The second step takes the vector v=(v1, v2, v3, v4) from the
 previous step and outputs two arrays m[0]..m[64] and d[0]..d[64]. Each
 entry of d is between 0 and 7, and each entry in m is -1 or 0. Rather
 then describe the properties required of this encoding, we present the
@@ -611,22 +616,22 @@ algorithm that computes it. bit(x, n) denotes the nth bit of x.
 m[64]=-1
 for i=0 to 63 do:
    d[i] = 0
-   m[i] = -bit(a1, i+1)
+   m[i] = -bit(v1, i+1)
    for j = 2 to 4 do:
-      d[i] = d[i]+bit(aj, 0)<<(j-2)
-      c = (bit(a1, i+1)|bit(aj,0)) xor bit(a1, i+1)
-      aj = aj/2+c
-d[64]=a2+2a3+4a
+      d[i] = d[i]+bit(vj, 0)<<(j-2)
+      c = (bit(v1, i+1)|bit(vj,0)) xor bit(v1, i+1)
+      vj = vj/2+c
+d[64] = v2+2*v3+4*v4
 ~~~~~
 
 ### Point Multiplication
 
-We now describe the full algorithm for computing point
-multiplication. On inputs m and P, the algorithm first computes the
-precomputed table T with 8 points (see "Table Precomputation") and
-then carries out the scalar decomposition and scalar recoding to
-produce the two arrays m[0]..m[64] and d[0]..d[64\] (see "Scalar
-Decomposition and Recoding").
+We now describe the last step in the endomorphism based algorithm for
+computing point multiplication. On inputs m and P, the algorithm first
+computes the precomputed table T with 8 points (see "Table
+Precomputation") and then carries out the scalar decomposition and
+scalar recoding to produce the two arrays m[0]..m[64] and d[0]..d[64\]
+(see "Scalar Decomposition and Recoding").
 
 Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then the
 multiplication is completed by the following pseudocode:
@@ -657,7 +662,7 @@ for security.
 
 # Use of the scalar multiplication primitive for Diffie-Hellman Key Agreement
 
-The above scalar multiplication primitive can be used to implement
+The above scalar multiplication alogirthms can be used to implement
 Diffie-Hellman with cofactor.
 
 ~~~
@@ -672,11 +677,12 @@ Note that the multiplication by the cofactor 392 does not need to be
 computed in constant time and, hence, it only requires nine doublings
 and two additions (i.e., one uses the binary representation of 392 and
 computes a double-and-add point multiplication scanning bits from left
-to right).  It MUST NOT be computed with the optimized algorithm
-above, as P is not known to be a N-torsion point, and therefore the
-scalar recoding is not correct. The role of the seperate
-multiplication by 392 is to ensure that Q is an N-torsion point so
-that the optimized algorithm above may be used.
+to right).  It MUST NOT be computed with either algorithm above, as P
+is not known to be a N-torsion point, and therefore the scalar
+recoding or taking the scalar mod N will result in the wrong
+answer. The role of the seperate multiplication by 392 is to ensure
+that Q is an N-torsion point so that the algorithms above may
+be used.
 
 Two users, Alice and Bob, can carry out the following steps to derive
 a shared key: both pick a random string of 32 bytes, mA and mB
@@ -686,14 +692,15 @@ A and B, and then Alice computes KAB = DH(mA, Expand(B)) while Bob
 computes KBA = DH(mB, Expand(A)), which produces the shared point K =
 KAB = KBA.
 
-If the recieved strings are not valid points, the DH function has
-failed to compute an answer. Implementations SHOULD return a random 32
-byte string as well as return an error, to prevent bugs when
-applications ignore return codes. They MUST signal an error.
-
 The y coordinate of K, represented as a 16 byte little endian number
 with top bit clear, is the shared secret. The x coordinate computed
 doesn't matter for the value of this shared secret.
+
+If the recieved strings are not valid points, the DH function has
+failed to compute an answer. Implementations SHOULD return a random 32
+byte string as well as return an error, to prevent bugs when
+applications ignore return codes. They MUST signal an error when
+decompression fails.
 
 Implementations MAY use any method to carry out these
 calculations, provided that it agrees with the above function on all
@@ -714,27 +721,27 @@ IANA need take no action.
 
 Claus Diem has steadily reduced the security of elliptic curves
 defined over extension fields of degree greater then two over large
-characteristic fields, but so far he best known attacks on elliptic
+characteristic fields, but so far the best known attacks on elliptic
 curves over quadratic extensions remain the generic algorithms for
 discrete logs. On Curve 4Q these attacks take on the order of 2^120
 group operations to compute a single discrete logarithm. The additional
 endomorphisms have large order, and so cannot be used to accelerate
 generic attacks.
 
-Implementations in the context of Diffie-Hellman (and similar
-applications) MUST check that points input to scalar multiplication
-algorithms are on the curve. Removing such checks may result in
-revealing the entire scalar to an attacker. The curve is not
-twist-secure: implementations using single coordinate ladders MUST
-validate points before operating on them. In the case of protocols
-that require contributory behavior, when the identity is the output of
-the DH primitive it MUST be rejected and failure signaled to higher
-levels. Notoriously [TLS] without [EMS] is such a protocol.
+Implementations MUST check that input points are on the
+curve. Removing such checks may result in revealing the entire scalar
+to an attacker. The curve is not twist-secure: implementations using
+single coordinate ladders MUST validate points before operating on
+them. In the case of protocols that require contributory behavior,
+when the identity is the output of the DH primitive it MUST be
+rejected and failure signaled to higher levels. Notoriously [TLS]
+without [EMS] is such a protocol.
 
-The arithmetic operations and table loads must be done in constant
-time to prevent timing and cache attacks. Side-channel analysis is a
-constantly moving field, and implementers must be extremely careful to
-ensure that the operations used do in fact avoid leaking information.
+The arithmetic operations and table lookups need to be implemented to
+avoid different memory access patters or timings because of the values
+being operated on. Side-channel analysis is a constantly moving field,
+and implementers must be extremely careful to ensure that the
+operations used do in fact avoid leaking information.
 
 If private scalars are not reused in the Diffie-Hellman protocol, the
 security against side channel attacks is increased. Protocols which
