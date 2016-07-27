@@ -68,22 +68,6 @@ informative:
           -
               ins: B.-Y. Yang
 
-    EMS:
-       target: "Https://tools.ietf.org/html/rfc7627"
-       title: Transport Layer Security (TLS) Session Hash and Extended Master Secret Extension
-       date: 2015
-       author:
-          -
-              ins: K. Bhargavan
-          -
-              ins: A. Delignat-Lavaud
-          -
-              ins: A. Pironti
-          -
-              ins: A. Langley
-          -
-              ins: M. Ray
-
     GLV:
        target: "https://www.iacr.org/archive/crypto2001/21390189.pdf"
        title: "Faster Point Multiplication on Elliptic Curves with Efficient Endomorphisms"
@@ -157,15 +141,6 @@ informative:
               ins: T. Lange
           -
               ins: C. Peters
-    TLS:
-       target: "https://tools.ietf.org/html/rfc5246"
-       title: The Transport Layer Security (TLS) Protocol Version 1.2
-       date: 2008
-       author:
-          -
-              ins: E. Rescorla
-          -
-              ins: T. Dierks
 
 --- abstract
 
@@ -265,18 +240,11 @@ less than p, they always have the top bit clear. The 16 bytes b[0],
 b[1],... b[15] represent b[0]+256*b[1]+256^2*b[2]+...+256^15*b[16].
 
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the
-concatenation of the encodings for x0 and x1, that is 32 bytes.
-Implementations will use whatever internal representation they desire,
-but we will describe the operations on elements of GF(p^2) assuming
-that x = x0 + x1\*i, where x0 and x1 are elements of GF(p).
-
-Let x and y be elements of GF(p^2). A point (x, y) on Curve4Q is
+concatenation of the encodings for x0 and x1. A point (x, y) on Curve4Q is
 serialized in a compressed form as the representation of y with a
-modified top bit to indicate which of two values of x it may be.
+modified top bit to disambiguate between x and -x.
 
-This y value determines two possible x coordinates, the roots of the
-curve equation when y is substituted in. To determine the difference
-between these values we introduce an ordering. We order the elements
+To carry out this disambiguation we order the elements
 of GF(p^2) as follows: to compare x = x0+x1\*i with y = y0+y1\*i
 assuming all coordinates are in [0, p) we compare x0 with y0, and, if
 they are equal, compare x1 with y1. This is the lexicographic ordering
@@ -294,7 +262,7 @@ correct, and 1 if the larger possible x value is correct.
 
 
 To decompress a point take the value of y, and compute
-(y^2-1)\*invsqr((y^2-1)*(dy^2-1)). This is one possible x value, its
+(y^2-1)\*InvSqrt((y^2-1)*(dy^2-1)). This is one possible x value, its
 negation is the other. The top bit of the compressed representation is
 0 if the smaller one under the defined ordering above is intended, and
 1 otherwise. The inverse square root function is presented in the
@@ -708,8 +676,8 @@ to an attacker. The curve is not twist-secure: implementations using
 single coordinate ladders MUST validate points before operating on
 them. In the case of protocols that require contributory behavior,
 when the identity is the output of the DH primitive it MUST be
-rejected and failure signaled to higher levels. Notoriously {{TLS}}
-without {{EMS}} is such a protocol.
+rejected and failure signaled to higher levels. Notoriously {{?RFC5280}}
+without  {{?RFC7627}} is such a protocol.
 
 The computations need to be implemented without leaking secret values
 to addresses accessed or the total time taken for a computation.
@@ -788,14 +756,11 @@ Gy = 0x6E1C4AF8630E024249A7C344844C8B5C*i + 0x0E3FEE9BA120785AB924A2462BCBB287
 
 Inversion of nonzero elements of GF(p) can be computed in
 constant-time using one exponentiation via Fermat's Little Theorem:
-1/a = a^(p - 2) = a^(2^127 - 3). It is also necessary to compute the
-inverse square roots of elements of GF(p) by computing a^((p-3)/4). This
-computes the reciprocal of a square root of a if one exists, and otherwise
-computes the reciprocal of the square root of -a. The use of this operation
-in accelerating decompression comes from {{invsqr}}.
+1/a = a^(p - 2) = a^(2^127 - 3).
 
-We now explain how to compute the inverse square root in GF(p^2) by adapting
-Algorithm 8 from {{SQRT}}.
+The following algorithm for computing inverse square roots in GF(p^2) is an adaptation of
+Algorithm 8 from {{SQRT}}. Note that (p-3)/4 is 2^125-1, and there is a very short addition
+chain to compute this value.
 
 ~~~~~
    InvSqrt(a+b*i):
