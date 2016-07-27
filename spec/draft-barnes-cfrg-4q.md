@@ -170,7 +170,7 @@ become more efficient compared to prime fields of the same size. The
 field GF((2^127-1)^2) offers extremely efficient arithmetic as the
 modulus is a Mersenne prime. Together these improvements substantially
 reduce computation time compared to other proposed Diffie-Hellman key
-exchanges
+exchanges.
 
 This document specifies a twisted Edwards curve ("Curve4Q"), proposed
 in {{Curve4Q}}, that supports constant-time, exception-free scalar
@@ -220,24 +220,24 @@ order of this group is \#E = 2^3 · 7^2 · N, where N is the following
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
-Points P on E such that N*P = (0, 1) are N-torsion points. Given a point
+Points P on E such that N\*P = (0, 1) are N-torsion points. Given a point
 P and Q which are both N-torsion points, it is difficult to find m such that
-Q = m*P.
+Q = m\*P.
 
 This group is isomorphic to the Jacobian of points on an elliptic
 curve over GF(p^2) as explained in {{Curve4Q}}. This elliptic curve is
 isogenous to its Galois conjugate, and has complex
 multiplication. These produce two different endormorphisms on E, both
-efficiently computable. As a result it is possible to simultaneously
-apply the endomorphisms from {{GLV}} and those in the style of {{GLS}} to
-achieve a four dimensional decomposition of scalars.
+efficiently computable. As a result a 256 bit scalar can be transformed
+into four 64-bit ones, as in {{GLV}} and {{GLS}}, produce a large
+acceleration of scalar multiplication.
 
 # Curve Points
 
 Elements a in GF(p) are represented as 16 byte little endian integers
 which are the numbers in the range [0, p). Because they are always
 less than p, they always have the top bit clear. The 16 bytes b[0],
-b[1],... b[15] represent b[0]+256*b[1]+256^2*b[2]+...+256^15*b[16].
+b[1],... b[15] represent b[0]+256\*b[1]+256^2\*b[2]+...+256^15\*b[16].
 
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the
 concatenation of the encodings for x0 and x1. A point (x, y) on Curve4Q is
@@ -375,7 +375,7 @@ d[62] = m
 ~~~~
 
 At this point the computation of the multiplication is straightforward. Note
-that (2*n+1)*P is stored in T[n].
+that (2\*n+1)\*P is stored in T[n].
 
 ~~~~
 Let ind = (abs(d[62])-1)/2
@@ -676,7 +676,7 @@ to an attacker. The curve is not twist-secure: implementations using
 single coordinate ladders MUST validate points before operating on
 them. In the case of protocols that require contributory behavior,
 when the identity is the output of the DH primitive it MUST be
-rejected and failure signaled to higher levels. Notoriously {{?RFC5280}}
+rejected and failure signaled to higher levels. Notoriously {{?RFC5246}}
 without  {{?RFC7627}} is such a protocol.
 
 The computations need to be implemented without leaking secret values
