@@ -194,13 +194,13 @@ more endomorphism families to pick from, and the field operations
 become more efficient compared to prime fields of the same size. The
 field GF((2^127-1)^2) offers extremely efficient arithmetic as the
 modulus is a Mersenne prime. Together these improvements substantially
-reduce power consumption and computation time compared to other
-proposed Diffie-Hellman key exchanges
+reduce computation time compared to other proposed Diffie-Hellman key
+exchanges
 
 This document specifies a twisted Edwards curve ("Curve4Q"), proposed
-in [Curve4Q], that supports constant-time, exception-free scalar
+in {{Curve4Q}}, that supports constant-time, exception-free scalar
 multiplications that are faster than any alternative. As described in
-[Curve4Q], Curve4Q is the only known elliptic curve that permits a
+{{Curve4Q}}, Curve4Q is the only known elliptic curve that permits a
 four dimensional decomposition over the highly efficient field GF(p^2)
 with p = 2^127 - 1 and has a prime order subgroup of order
 approximately 2^246. No known elliptic curve with such a decomposition has a
@@ -213,6 +213,17 @@ Curve4Q is defined over the finite field GF(p^2), where p is the Mersenne prime
 2^127 - 1.  Elements of this finite field have the form (a + b * i), where a and
 b are elements of the finite field GF(p) (i.e., integers mod p) and i^2 = -1.
 
+Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of
+GF(p^2). Addition of A and B is performed coordinate-wise: A+B =
+(a0+b0) + (a1+b1)\*i, as is subtraction: A-B = (a0-b0) +
+(a1-b1)\*i. Multiplication is computed as: A\*B = (a0\*b0-a1\*b1)
++ (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1\*b1) +
+((a0+a1)\*(b0+b1)-(a0\*b0+a1\*b1))\*i.  Squaring A^2 is computed as
+(a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is computed as
+a0/(a0^2+a1^2) - i\*a1/(a0^2+a1^2).  Lastly, there is a field
+automorphism conj(A) = a0 - a1\*i.
+
+
 Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
 following curve equation:
 
@@ -223,21 +234,27 @@ d = 0x00000000000000e40000000000000142 +
 0x5e472f846657e0fcb3821488f1fc0c8d * i
 ~~~~~
 
-Let E(GF(p^2)) be the set of GF(p^2)-rational points on E.  This set
-forms an abelian group for which (0,1) is the neutral element and the
-inverse of a point (x, y) is given by (-x, y). The order of this group
-is \#E = 2^3 · 7^2 · N, where N is the following 246-bit prime:
+Let E(GF(p^2)) be the set of pairs (x, y) of elements of GF(p^2)
+satisfying this equation.  This set forms an abelian group with group
+law given later in this document for which (0,1) is the neutral
+element and the inverse of a point (x, y) is given by (-x, y). The
+order of this group is \#E = 2^3 · 7^2 · N, where N is the following
+246-bit prime:
 
 ~~~~~
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 ~~~~~
 
+Points P on E such that N*P = (0, 1) are N-torsion points. Given a point
+P and Q which are both N-torsion points, it is difficult to find m such that
+Q = m*P.
+
 This group is isomorphic to the Jacobian of points on an elliptic
-curve over GF(p^2) as explained in [Curve4Q]. This elliptic curve is
+curve over GF(p^2) as explained in {{Curve4Q}}. This elliptic curve is
 isogenous to its Galois conjugate, and has complex
 multiplication. These produce two different endormorphisms on E, both
 efficiently computable. As a result it is possible to simultaneously
-apply the endomorphisms from [GLV] and those in the style of [GLS] to
+apply the endomorphisms from {{GLV}} and those in the style of {{GLS}} to
 achieve a four dimensional decomposition of scalars.
 
 # Curve Points
@@ -275,59 +292,15 @@ correct, and 1 if the larger possible x value is correct.
 |..............|.|..............|.|
 ~~~~~
 
-Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of
-GF(p^2). Addition of A and B is performed coordinate-wise: A+B =
-(a0+b0) + (a1+b1)\*i, as is subtraction: A-B = (a0-b0) +
-(a1-b1)\*i. Multiplication is computed as: A\*B = (a0\*b0-a1\*b1)
-+ (a0\*b1+a1\*b0)\*i or, alternatively, A\*B = (a0\*b0-a1\*b1) +
-((a0+a1)\*(b0+b1)-(a0\*b0+a1\*b1))\*i.  Squaring A^2 is computed as
-(a0+a1)\*(a0-a1) + 2\*a0\*a1\*i. Inversion A^(-1) is computed as
-a0/(a0^2+a1^2) - i\*a1/(a0^2+a1^2).  Lastly, there is a field
-automorphism conj(A) = a0 - a1\*i.
-
-Inversion of nonzero elements of GF(p) can be computed in
-constant-time using one exponentiation via Fermat's Little Theorem:
-1/a = a^(p - 2) = a^(2^127 - 3). It is also necessary to compute the
-inverse square roots of elements of GF(p) by computing a^((p-3)/4). This
-computes the reciprocal of a square root of a if one exists, and otherwise
-computes the reciprocal of the square root of -a. The use of this operation
-in accelerating decompression comes from [invsqr].
-
-We now explain how to compute the inverse square root in GF(p^2) by adapting
-Algorithm 8 from [SQRT].
-
-~~~~~
-   InvSqrt(a+b*i):
-        if b = 0:
-            t = a^((p-3)/4)
-            if a*t^2=1:
-               return t+0*i
-            else:
-                return 0 + t*i
-        else:
-            n = a^2+b^2
-            s = (n)^((p-3)/4)
-            if n*s^2 is not 1:
-                return FAILURE
-            c = n*s
-            delta = (a+c)/2
-            g = (delta)^((p-3)/4)
-            if delta*g^2 = 1:
-                x0 = delta*g
-                x1 = (b/2)*delta
-             else:
-                 x1 = delta*g
-                 x0 = (b/2)*delta
-             return (x0+i*x1)*s
-~~~~~
 
 To decompress a point take the value of y, and compute
-y^2-1\*invsqr((y^2-1)*(dy^2-1)). This is one possible x value, its
-negation is the other. The top bit of the compressed representation
-is 0 if the smaller one under the defined ordering above is intended,
-and 1 otherwise.
+(y^2-1)\*invsqr((y^2-1)*(dy^2-1)). This is one possible x value, its
+negation is the other. The top bit of the compressed representation is
+0 if the smaller one under the defined ordering above is intended, and
+1 otherwise. The inverse square root function is presented in the
+appendix.
 
-This point compression format is from [SchnorrQ], and the similar
+This point compression format is from {{SchnorrQ}}, and the similar
 algorithm there MAY be used instead to compute the x coordinates. Any
 method to decompress points MAY be used provided it computes the
 correct answers. We call the operation of compressing a point P into
@@ -354,7 +327,7 @@ are used in the optimized scalar multiplication algorithm in order to
 save computations: point representation R1 is given by (X,Y,Z,Ta,Tb),
 where T=Ta*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
 representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
-R4 is (X,Y,Z). R2 representation was introduced in [Ed25519] to
+R4 is (X,Y,Z). R2 representation was introduced in {{Ed25519}} to
 accelerate additions.
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
@@ -367,7 +340,7 @@ multiexponentation by avoiding redundant computations. Conversion
 between point representations is straightforward.
 
 Below, we list the explicit formulas for the required point
-operations. These formulas were adapted from [Twisted] and [TwistedRevisited].
+operations. These formulas were adapted from {{Twisted}} and {{TwistedRevisited}}.
 
 Doubling is computed as follows:
 
@@ -427,9 +400,10 @@ is odd. At this point we recode m into a signed digit representation of 63 base
 16 signed, odd, digits. The following algorithm accomplishes this task.
 
 ~~~~
-for i=0 to 62:
+for i=0 to 61:
     d[i] = (m mod 32)-16
     m = (m - d[i])/32
+d[62] = m
 ~~~~
 
 At this point the computation of the multiplication is straightforward. Note
@@ -456,7 +430,7 @@ To negate a point (N, D, E, F) in R2 form one computes (D, N, E, -F).
 It is important that this operation and the table lookup be done in constant
 time and without differences in memory access patterns that depend on the
 index or sign. This algorithm MUST NOT be applied to points which are not
-N torsion points: it will produce the wrong answer.
+N-torsion points: it will produce the wrong answer.
 
 ## Multiplication with endomorphisms
 
@@ -481,7 +455,7 @@ and operations described above.
 The two endomorphisms phi and psi used to accelerate multiplication
 are computed as phi(Q) = tau_dual(upsilon(tau(Q)) and psi(Q) =
 tau_dual(chi(tau(Q))).  Below, we present procedures for tau,
-tau_dual, upsilon and chi, adapted from [FourQlib]. Tau_dual produces
+tau_dual, upsilon and chi, adapted from {{FourQlib}}. Tau_dual produces
 an R1 point, while the other procedures produce projective
 coordinates.
 
@@ -490,7 +464,7 @@ chi are endomorphisms of that different curve. Tau and tau_dual are
 the isogenies mentioned in the mathematical background above.  As a
 result the intermediate results do not satisfy the equations of the
 curve E. Implementers who wish to check the correctness of these
-intermediate results are advised to read the [Curve4Q] paper to
+intermediate results are advised to read the {{Curve4Q}} paper to
 discover which formulas are satisfied by each set of inputs and
 output.
 
@@ -615,8 +589,8 @@ for i=0 to 63 do:
    d[i] = 0
    m[i] = -bit(v1, i+1)
    for j = 2 to 4 do:
-      d[i] = d[i]+bit(vj, 0)<<(j-2)
-      c = (bit(v1, i+1)|bit(vj,0)) xor bit(v1, i+1)
+      d[i] = d[i]+bit(vj, 0)*2^(j-2)
+      c = (bit(v1, i+1) or bit(vj,0)) xor bit(v1, i+1)
       vj = vj/2+c
 d[64] = v2+2*v3+4*v4
 ~~~~~
@@ -704,9 +678,9 @@ Implementations MAY use any method to carry out these
 calculations, provided that it agrees with the above function on all
 inputs and failure cases, and does not leak information about secret
 keys. For example, refer to the constant-time fixed-base
-multiplication algorithm implemented in [FourQlib] to accelerate
+multiplication algorithm implemented in {{FourQlib}} to accelerate
 the computation of DH(m, G), or to the algorithms implemented
-in [FourQlib] without the use of isogenies.
+in {{FourQlib}} without the use of isogenies.
 
 As the cofactor is greater then one, Curve4Q MUST NOT be used with
 ordinary Diffie-Hellman, but MUST always be used for Diffie-Hellman
@@ -734,8 +708,8 @@ to an attacker. The curve is not twist-secure: implementations using
 single coordinate ladders MUST validate points before operating on
 them. In the case of protocols that require contributory behavior,
 when the identity is the output of the DH primitive it MUST be
-rejected and failure signaled to higher levels. Notoriously [TLS]
-without [EMS] is such a protocol.
+rejected and failure signaled to higher levels. Notoriously {{TLS}}
+without {{EMS}} is such a protocol.
 
 The computations need to be implemented without leaking secret values
 to addresses accessed or the total time taken for a computation.
@@ -809,3 +783,41 @@ b4 = [1400113754146392127, 3540637644719456050,
 Gx = 0x1E1F553F2878AA9C96869FB360AC77F6*i + 0x1A3472237C2FB305286592AD7B3833AA
 
 Gy = 0x6E1C4AF8630E024249A7C344844C8B5C*i + 0x0E3FEE9BA120785AB924A2462BCBB287
+
+# Inversion and Square roots
+
+Inversion of nonzero elements of GF(p) can be computed in
+constant-time using one exponentiation via Fermat's Little Theorem:
+1/a = a^(p - 2) = a^(2^127 - 3). It is also necessary to compute the
+inverse square roots of elements of GF(p) by computing a^((p-3)/4). This
+computes the reciprocal of a square root of a if one exists, and otherwise
+computes the reciprocal of the square root of -a. The use of this operation
+in accelerating decompression comes from {{invsqr}}.
+
+We now explain how to compute the inverse square root in GF(p^2) by adapting
+Algorithm 8 from {{SQRT}}.
+
+~~~~~
+   InvSqrt(a+b*i):
+        if b = 0:
+            t = a^((p-3)/4)
+            if a*t^2=1:
+               return t+0*i
+            else:
+                return 0 + t*i
+        else:
+            n = a^2+b^2
+            s = (n)^((p-3)/4)
+            if n*s^2 is not 1:
+                return FAILURE
+            c = n*s
+            delta = (a+c)/2
+            g = (delta)^((p-3)/4)
+            if delta*g^2 = 1:
+                x0 = delta*g
+                x1 = (b/2)*delta
+             else:
+                 x1 = delta*g
+                 x0 = (b/2)*delta
+             return (x0+i*x1)*s
+~~~~~
