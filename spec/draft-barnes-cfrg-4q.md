@@ -232,7 +232,7 @@ exchanges: the best known attacks on the Diffie- Hellman problem
 involve solving the discrete logarithm problem.
 
 This group has two different efficiently computable endomorphisms, as
-described in {{FourQ}}. As dicussed in {{GLV}} and {{GLS}} these
+described in {{Curve4Q}}. As dicussed in {{GLV}} and {{GLS}} these
 endomorphisms permit turning multiplication by a large scalar into
 multiple multiplications by smaller scalars, which can be evaluated in
 much less time overall.
