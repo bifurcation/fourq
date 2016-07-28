@@ -35,6 +35,17 @@ informative:
               ins: C. Costello
          -
               ins: P. Longa
+
+    Distinguished:
+       target: "http://people.scs.carleton.ca/~paulv/papers/JoC97.pdf"
+       title: "Parallel Collision Search with Cryptanalytic Applications"
+       date: 1996
+       author:
+          -
+             ins: P.C. van Oorschot
+          -
+             ins: M.J. Wiener
+
     Invsqr:
         target: "http://eprint.iacr.org/2012/309.pdf"
         title: Fast and compact elliptic-curve cryptography
@@ -82,7 +93,7 @@ informative:
 
     GLS:
         target: "https://www.iacr.org/archive/eurocrypt2009/54790519/54790519.pdf"
-        title: "Endomorphisms for Faster Elliptic Curve Cryptograpy on a Large Class of Curves"
+        title: "Endomorphisms for Faster Elliptic Curve Cryptography on a Large Class of Curves"
         date: 2009
         author:
            -
@@ -147,7 +158,7 @@ informative:
 This document specifies an twisted Edwards curve that takes advantage of arithmetic
 over the field GF(2^127-1) and endomorphisms to achieve the speediest Diffie-Hellman
 key agreements over a group of order approximately 2^246. The time taken for a single
-variable-base exponentation is half that of Curve25519, and when not using endomorphisms
+variable-base exponentiation is half that of Curve25519, and when not using endomorphisms
 is eighty percent of that taken by Curve25519.
 
 --- middle
@@ -187,7 +198,7 @@ b are elements of the finite field GF(p) (i.e., integers mod p) and i^2 = -1.
 
 Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of
 GF(p^2). Below we describe addition, subtraction, multiplication, squaring,
-and taking the reciprocal, along with conjugation.
+inversion, and conjugation.
 
 ~~~~
 A + B = (a0 + b0) + (a1 + b1)*i
@@ -200,7 +211,7 @@ A * A = (a0+a1)*(a0-a1) + 2*a0*a1*i
 
 conj(A) = a0 - a1*i
 
-1/A = conj(A)/(a0^2+a1^1)
+1/A = conj(A)/(a0^2+a1^2)
 ~~~~
 
 Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
@@ -232,7 +243,7 @@ exchanges: the best known attacks on the Diffie- Hellman problem
 involve solving the discrete logarithm problem.
 
 This group has two different efficiently computable endomorphisms, as
-described in {{Curve4Q}}. As dicussed in {{GLV}} and {{GLS}} these
+described in {{Curve4Q}}. As discussed in {{GLV}} and {{GLS}} these
 endomorphisms permit turning multiplication by a large scalar into
 multiple multiplications by smaller scalars, which can be evaluated in
 much less time overall.
@@ -249,14 +260,13 @@ concatenation of the encodings for x0 and x1. A point (x, y) on Curve4Q is
 serialized in a compressed form as the representation of y with a
 modified top bit to disambiguate between x and -x.
 
-To carry out this disambiguation we order the elements
-of GF(p^2) as follows: to compare x = x0+x1\*i with y = y0+y1\*i
-assuming all coordinates are in [0, p) we compare x0 with y0, and, if
-they are equal, compare x1 with y1. This is the lexicographic ordering
-on the numerical values of (x0, x1) where each value is in the range
-[0, p).
+To carry out this disambiguation we order the elements of GF(p^2) as
+follows: to compare x = x0+x1\*i with y = y0+y1\*i assuming all
+coordinates are in [0, p) we compare x0 with y0, and, if they are
+equal, compare x1 with y1. This is the lexicographic ordering on (x0,
+x1) where each value is in the range [0, p).
 
-The high bit of a compressed point 0 if the smaller possible x value is
+The high bit of a compressed point is 0 if the smaller possible x value is
 correct, and 1 if the larger possible x value is correct. 
 
 ~~~~~
@@ -267,7 +277,7 @@ correct, and 1 if the larger possible x value is correct.
 
 
 To decompress a point take the value of y, and compute
-(y^2-1)\*InvSqrt((y^2-1)*(dy^2-1)). This is one possible x value, its
+(y^2-1)\*InvSqrt((y^2-1)\*(dy^2-1)). This is one possible x value, its
 negation is the other. The top bit of the compressed representation is
 0 if the smaller one under the defined ordering above is intended, and
 1 otherwise. The inverse square root function is presented in the
@@ -306,13 +316,14 @@ these representations is straightforward.
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
 addition, we first define ADD_core that takes an R2 and R3 point and
-produces an R1 point. This can be used to implement an opperation ADD
+produces an R1 point. This can be used to implement an operation ADD
 which takes an R1 and R2 point as inputs, converts the R1 point to R3,
 and then executes ADD_core. Exposing these operations and the multiple
 representations helps save time by avoiding redundant computations.
 
 Below, we list the explicit formulas for the required point
-operations. These formulas were adapted from {{Twisted}} and {{TwistedRevisited}}.
+operations. These formulas were adapted from {{Twisted}} and
+{{TwistedRevisited}}.
 
 Doubling is computed as follows:
 
@@ -417,11 +428,10 @@ doublings and additions after recoding a_1, a_2, a_3 and a_4.  The
 algorithm is considerably faster then the one without endomorphisms
 above.
 
-We describe each operation separately: the computation of the
-endomorphisms, the scalar decompositon and recoding, and lastly the
+We describe each part separately: the computation of the
+endomorphisms, the scalar decomposition and recoding, and lastly the
 computation of the final results. Each section refers to constants
-listed in an appendix. These operations make use of the coordinates
-and operations described above.
+listed in an appendix in order of appearance.
 
 
 ### Endomorphisms and Isogenies
@@ -572,7 +582,7 @@ d[64] = v2+2*v3+4*v4
 
 We now describe the last step in the endomorphism based algorithm for
 computing point multiplication. On inputs m and P, the algorithm first
-computes the precomputed table T with 8 points (see "Table
+computes the recomputed table T with 8 points (see "Table
 Precomputation") and then carries out the scalar decomposition and
 scalar recoding to produce the two arrays m[0]..m[64] and d[0]..d[64\]
 (see "Scalar Decomposition and Recoding").
@@ -607,10 +617,10 @@ for security.
 
 # Use of the scalar multiplication primitive for Diffie-Hellman Key Agreement
 
-The above scalar multiplication alogirthms can be used to implement
+The above scalar multiplication algorithms can be used to implement
 Diffie-Hellman with cofactor.
 
-~~~
+~~~~
 DH(m, P):
       Ensure P on curve and if not return FAILURE
       Q = [392]*P
@@ -638,22 +648,22 @@ computes a double-and-add point multiplication scanning bits from left
 to right).  It MUST NOT be computed with either algorithm above, as P
 is not known to be a N-torsion point, and therefore the scalar
 recoding or addition of N will produce the wrong answer. The role of
-the seperate multiplication by 392 is to ensure that Q is an N-torsion
+the separate multiplication by 392 is to ensure that Q is an N-torsion
 point so that the algorithms above may be used.
 
-If the recieved strings are not valid points, the DH function has
+If the received strings are not valid points, the DH function has
 failed to compute an answer. Implementations SHOULD return a random 32
 byte string as well as return an error, to prevent bugs when
 applications ignore return codes. They MUST signal an error when
 decompression fails.
 
-Implementations MAY use any method to carry out these
-calculations, provided that it agrees with the above function on all
-inputs and failure cases, and does not leak information about secret
-keys. For example, refer to the constant-time fixed-base
-multiplication algorithm implemented in {{FourQlib}} to accelerate
-the computation of DH(m, G), or to the algorithms implemented
-in {{FourQlib}} without the use of isogenies.
+Implementations MAY use any method to carry out these calculations,
+provided that it agrees with the above function on all inputs and
+failure cases, and does not leak information about secret keys. For
+example, refer to the constant-time fixed-base multiplication
+algorithm implemented in {{FourQlib}} to accelerate the computation of
+DH(m, G), or various fixed-window implementation options that may
+offer better performance on some machines.
 
 As the cofactor is greater then one, Curve4Q MUST NOT be used with
 ordinary Diffie-Hellman, but MUST always be used for Diffie-Hellman
@@ -666,33 +676,33 @@ IANA need take no action.
 
 # Security Considerations
 
-Claus Diem has steadily reduced the security of elliptic curves
-defined over extension fields of degree greater then two over large
-characteristic fields, but so far the best known attacks on elliptic
-curves over quadratic extensions remain the generic algorithms for
-discrete logs. On Curve 4Q these attacks take on the order of 2^120
-group operations to compute a single discrete logarithm. The additional
+The best known algorithms for the computation of discrete logarithms
+on Curve4Q are parallel versions of the Pollard rho algorithm in
+[Distinguished]. On Curve 4Q these attacks take on the order of 2^120 group
+operations to compute a single discrete logarithm. The additional
 endomorphisms have large order, and so cannot be used to accelerate
 generic attacks.
 
-Implementations MUST check that input points are on the
-curve. Removing such checks may result in revealing the entire scalar
-to an attacker. The curve is not twist-secure: implementations using
-single coordinate ladders MUST validate points before operating on
-them. In the case of protocols that require contributory behavior,
+Implementations MUST check that input points are on the curve and
+properly decompress. Removing such checks may result in extremely
+effective attacks. The curve is not twist-secure: implementations
+using single coordinate ladders MUST validate points before operating
+on them. In the case of protocols that require contributory behavior,
 when the identity is the output of the DH primitive it MUST be
-rejected and failure signaled to higher levels. Notoriously {{?RFC5246}}
-without  {{?RFC7627}} is such a protocol.
+rejected and failure signaled to higher levels. Notoriously
+{{?RFC5246}} without {{?RFC7627}} is such a protocol.
 
-The computations need to be implemented without leaking secret values
-to addresses accessed or the total time taken for a computation.
-Side-channel analysis is a constantly moving field, and implementers
-must be extremely careful to ensure that the operations used do in
-fact avoid leaking information. Using independent private scalars for
-each operation is recommended to reduce the impact of side-channel
-attacks.
+Implementations MUST ensure that the sequence of branches taken,
+addresses accessed, and time taken by operations does not depend on
+secret data. All of these have been exploited in the past to break
+implementations.  Side-channel analysis is a constantly moving field,
+and implementers must be extremely careful to ensure that the
+operations used do in fact avoid leaking information. Using
+independent private scalars for each operation is recommended to
+reduce the impact of side-channel attacks, however this is not
+possible for many applications of Diffie-Hellman key agreement.
 
-# Acknowledgements
+# Acknowledgments
 
 We thank Patrick Longa for his invaluable comments and suggestions, as
 well as contributions to the text.
