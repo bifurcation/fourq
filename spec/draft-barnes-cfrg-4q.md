@@ -278,10 +278,11 @@ correct, and 1 if the larger possible x value is correct.
 
 
 To decompress a point take the value of y, and compute
-(y^2-1)\*InvSqrt((y^2-1)\*(dy^2-1)). This is one possible x value, its
+(y^2-1)\*InvSqrt((y^2-1)\*(dy^2-1)), where InvSqrt(z)=1/sqrt(z). 
+This quantity is one possible x value, its
 negation is the other. The top bit of the compressed representation is
 0 if the smaller one under the defined ordering above is intended, and
-1 otherwise. The inverse square root function is presented in the
+1 otherwise. An algorithm for computing InvSqrt is contained in the
 appendix.
 
 This point compression format is from {{SchnorrQ}}, and the similar
@@ -304,8 +305,8 @@ exponentiation, while the other uses endomorphisms to accelerate computation.
 ## Alternative Point Representations and Addition Laws
 
 We use coordinates based on extended twisted Edwards coordinates
-{{TwistedRevisited}}: the tuple (X, Y, Z, T) with Z nonzero and Z \* T =
-X \* Y corresponds to a point (x, y) satisfying x = X/Z and y =
+{{TwistedRevisited}}: the tuple (X, Y, Z, T) with Z nonzero and Z \* T
+= X \* Y corresponds to a point (x, y) satisfying x = X/Z and y =
 Y/Z. The point at infinity is (0,1,1). The following slight variants
 are used in the optimized scalar multiplication algorithm in order to
 save computations: point representation R1 is given by (X,Y,Z,Ta,Tb),
@@ -585,7 +586,7 @@ We now describe the last step in the endomorphism based algorithm for
 computing point multiplication. On inputs m and P, the algorithm first
 computes the precomputed table T with 8 points (see "Table
 Precomputation") and then carries out the scalar decomposition and
-scalar recoding to produce the two arrays m[0]..m[64] and d[0]..d[64\]
+scalar recoding to produce the two arrays m[0]..m[64] and d[0]..d[64]
 (see "Scalar Decomposition and Recoding").
 
 Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then the
@@ -642,12 +643,10 @@ as in the section "Curve Points" is the shared secret. The x
 coordinate computed doesn't matter for the value of this shared
 secret.
 
-Note that the multiplication by the cofactor 392 does not need to be
-computed in constant time and, hence, it only requires nine doublings
-and two additions (i.e., one uses the binary representation of 392 and
-computes a double-and-add point multiplication scanning bits from left
-to right).  It MUST NOT be computed with either algorithm above, as P
-is not known to be a N-torsion point, and therefore the scalar
+Note that the multiplication by the cofactor 392 can be safely
+computed with nine doublings and two additions via the double and add
+method. It MUST NOT be computed with either algorithm above,
+as P is not known to be a N-torsion point, and therefore the scalar
 recoding or addition of N will produce the wrong answer. The role of
 the separate multiplication by 392 is to ensure that Q is an N-torsion
 point so that the algorithms above may be used.
@@ -682,10 +681,11 @@ on Curve4Q are parallel versions of the Pollard rho algorithm in
 [Distinguished]. On Curve 4Q these attacks take on the order of 2^120 group
 operations to compute a single discrete logarithm. The additional
 endomorphisms have large order, and so cannot be used to accelerate
-generic attacks.
+generic attacks. Quadratic fields are not affected by any of the index
+calculus attacks used over larger extension fields.
 
-Implementations MUST check that input points are on the curve and
-properly decompress. Removing such checks may result in extremely
+Implementations MUST check that input points properly decompress to
+points on the curve. Removing such checks may result in extremely
 effective attacks. The curve is not twist-secure: implementations
 using single coordinate ladders MUST validate points before operating
 on them. In the case of protocols that require contributory behavior,
