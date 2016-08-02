@@ -156,11 +156,14 @@ informative:
 
 --- abstract
 
-This document specifies an twisted Edwards curve that takes advantage of arithmetic
-over the field GF(2^127-1) and endomorphisms to achieve the speediest Diffie-Hellman
-key agreements over a group of order approximately 2^246. The time taken for a single
-variable-base exponentiation is half that of Curve25519, and when not using endomorphisms
-is eighty percent of that taken by Curve25519.
+This document specifies an twisted Edwards curve that takes advantage
+of arithmetic over the field GF(2^127-1) and endomorphisms to achieve
+the speediest Diffie-Hellman key agreements over a group of order
+approximately 2^246. The time taken for a single variable-base
+exponentiation is half that of Curve25519, and when not using
+endomorphisms is eighty percent of that taken by Curve25519. These
+performance gains do not depend on using large vector units, in contrast
+to Kummer surfaces.
 
 --- middle
 
@@ -173,14 +176,20 @@ reduced the cost of elliptic curve operations in terms of field
 operations, the number of group operations involved in scalar
 multiplication has not been reduced in the curves considered for IETF
 use. Using curves with efficiently computable endomorphisms reduces
-the number of group operations by enabling scalars to be recoded in
-shorter forms. By using curves over quadratic extensions there are
-more endomorphism families to pick from, and the field operations
-become more efficient compared to prime fields of the same size.The
-field GF((2^127-1)^2) offers extremely efficient arithmetic as the
-modulus is a Mersenne prime. Together these improvements substantially
-reduce computation time compared to other proposed Diffie-Hellman key
-exchanges.
+the number of group operations by turning one long scalar
+multiplication into the sum of two multiplications by scalars of half
+the length, which can be evaluated more efficiently.
+
+By using curves over quadratic extensions there are more endomorphism
+families to pick from, and the field operations become more efficient
+compared to prime fields of the same size. With more distinct
+endomorphisms it becomes possible to divide scalars into four
+parts. The field GF((2^127-1)^2) offers extremely efficient arithmetic
+as the modulus is a Mersenne prime. Together these improvements
+substantially reduce computation time compared to other proposed
+Diffie-Hellman key exchanges, but it was not possible to combine them
+all, as the demand for two distinct endomorphisms significantly restricts
+the curves that can be used.
 
 As described in {{Curve4Q}}, Curve4Q is the only known elliptic curve
 that permits a four dimensional decomposition over the highly
@@ -191,6 +200,7 @@ with such a decomposition has a larger prime order subgroup.  This
 undisclosed attacks. These speed benefits do not depend on vectorization,
 making them attractive even on constrained devices.
 
+
 # Mathematical Prerequisites
 
 Curve4Q is defined over the finite field GF(p^2), where p is the Mersenne prime
@@ -198,8 +208,8 @@ Curve4Q is defined over the finite field GF(p^2), where p is the Mersenne prime
 b are elements of the finite field GF(p) (i.e., integers mod p) and i^2 = -1.
 
 Let A = a0 + a1\*i and B = b0 + b1\*i be two elements of
-GF(p^2). Below we describe addition, subtraction, multiplication, squaring,
-inversion, and conjugation.
+GF(p^2). Below we present formulas for computing addition,
+subtraction, multiplication, squaring, inversion, and conjugation.
 
 ~~~~
 A + B = (a0 + b0) + (a1 + b1)*i
@@ -238,10 +248,11 @@ N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
 
 Points P on E such that N\*P = (0, 1) are N-torsion points. Given a
 point P and Q which are both N-torsion points, it is difficult to find
-m such that Q = m\*P, the elliptic curve discrete logarithm
-problem. This problem is related to the security of Diffie-Hellman
-exchanges: the best known attacks on the Diffie- Hellman problem
-involve solving the discrete logarithm problem.
+m such that Q = m\*P. This is the elliptic curve discrete logarithm
+problem, which is closely related to the security of Diffie-Hellman
+exchanges as the best known attacks on the Diffie- Hellman problem
+involve solving the discrete logarithm problem. The best known
+approaches take 2^120 group operations or so.
 
 This group has two different efficiently computable endomorphisms, as
 described in {{Curve4Q}}. As discussed in {{GLV}} and {{GLS}} these
@@ -252,9 +263,10 @@ much less time overall.
 # Representation of Curve Points
 
 Elements a in GF(p) are represented as 16 byte little endian integers
-which are the numbers in the range [0, p). Because they are always
-less than p, they always have the top bit clear. The 16 bytes b[0],
-b[1],... b[15] represent b[0]+256\*b[1]+256^2\*b[2]+...+256^15\*b[16].
+which are the numbers in the range [0, p). The 16 bytes b[0],
+b[1],... b[15] represent b[0]+256\*b[1]+256^2\*b[2]+...+256^15\*b[15].
+Since we are representing numbers in the range [0, 2^127-1), the top bit
+of b[15] is always zero.
 
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the
 concatenation of the encodings for x0 and x1. A point (x, y) on Curve4Q is
@@ -294,7 +306,10 @@ all P on the curve, and Compress(Expand(S))=S if and only if S is a
 valid representation of a point.
 
 Not all 32 byte strings represent valid points. Implementations MUST
-reject invalid points and check that decompression is successful.
+reject invalid strings and check that decompression is
+successful. Strings are invalid if they are not possible outputs of
+the compression operator. In particular the values of y0 and y1 MUST
+be less then p.
 
 # Scalar multiplication
 
@@ -305,16 +320,17 @@ exponentiation, while the other uses endomorphisms to accelerate computation.
 ## Alternative Point Representations and Addition Laws
 
 We use coordinates based on extended twisted Edwards coordinates
-{{TwistedRevisited}}: the tuple (X, Y, Z, T) with Z nonzero and Z \* T
-= X \* Y corresponds to a point (x, y) satisfying x = X/Z and y =
-Y/Z. The point at infinity is (0,1,1). The following slight variants
-are used in the optimized scalar multiplication algorithm in order to
-save computations: point representation R1 is given by (X,Y,Z,Ta,Tb),
-where T=Ta\*Tb; representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT);
-representation R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation
-R4 is (X,Y,Z). R2 representation was introduced in {{Ed25519}} to
-accelerate repeated additions of the same point. Converting between
-these representations is straightforward.
+introduced in {{TwistedRevisited}}: the tuple (X, Y, Z, T) with Z
+nonzero and Z \* T = X \* Y corresponds to a point (x, y) satisfying x
+= X/Z and y = Y/Z. The point at infinity in this representation is
+(0,1,1,0). The following slight variants are used in the optimized
+scalar multiplication algorithm in order to save computations: point
+representation R1 is given by (X,Y,Z,Ta,Tb), where T=Ta\*Tb;
+representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT); representation
+R3 is (N, D, Z, T) = (X+Y,Y-X,Z,T); and representation R4 is
+(X,Y,Z). R2 representation was introduced in {{Ed25519}} to accelerate
+repeated additions of the same point. Converting between these
+representations is straightforward.
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
 addition, we first define ADD_core that takes an R2 and R3 point and
@@ -322,6 +338,10 @@ produces an R1 point. This can be used to implement an operation ADD
 which takes an R1 and R2 point as inputs, converts the R1 point to R3,
 and then executes ADD_core. Exposing these operations and the multiple
 representations helps save time by avoiding redundant computations.
+
+These addition laws are complete: they have no exceptional cases, and
+therefor can be used in any algorithm for computing scalar multiples
+without worries about wrong answers for rare points.
 
 Below, we list the explicit formulas for the required point
 operations. These formulas were adapted from {{Twisted}} and
@@ -414,10 +434,11 @@ return Q
 
 As sign is either -1 or 1, the multiplication is simply a conditional
 negation.  To negate a point (N, D, E, F) in R2 form one computes (D,
-N, E, -F).  It is important that this operation and the table lookup
-are done in a manner that avoids side-channel attacks. This algorithm
-MUST NOT be applied to points which are not N-torsion points: it will
-produce the wrong answer.
+N, E, -F). The table lookups and conditional negations must be
+carefully implemented as described in ``Security Considerations'' to
+avoid side-channel attacks.  This algorithm MUST NOT be applied to
+points which are not N-torsion points: it will produce the wrong
+answer.
 
 ## Multiplication with endomorphisms
 
@@ -599,17 +620,15 @@ Convert Q to R4
 for i=63 to 0 do:
     Q = DBL(Q)
     Q = ADD(Q, s[i]*T[di])
-    Convert Q to R4
 return Q
 
 ~~~~~
 
-Negation of a point can be required after fetching an R2 point from
-the table T. To negate an R2 point (N, D, E, F) one computes (D, N, E
-,-F). It is important to do this (as well as the table lookup) in
-constant time, and without differences in the patterns of memory
-accesses depending on which values are used. (See ``Security Considerations''
-for more details)
+Multiplication by s[i] is simply a conditional negation. To negate an
+R2 point (N, D, E, F) one computes (D, N, E ,-F). It is important to
+do this (as well as the table lookup) in constant time, and without
+differences in the patterns of memory accesses depending on which
+values are used. (See ``Security Considerations'' for more details)
 
 The optimized multiplication algorithm above only works properly for
 N-torsion points. Implementations MUST NOT use this algorithm on
@@ -638,10 +657,10 @@ A and B, and then Alice computes KAB = DH(mA, Expand(B)) while Bob
 computes KBA = DH(mB, Expand(A)), which produces the shared point K =
 KAB = KBA.
 
-The y coordinate of K, represented as a 16 byte little endian number
-as in the section "Curve Points" is the shared secret. The x
-coordinate computed doesn't matter for the value of this shared
-secret.
+The y coordinate of K, represented as a 32 byte string as in the
+section "Curve Points" is the shared secret. The x coordinate computed
+doesn't matter for the value of this shared secret. The length of the
+shared secret is always 32 bytes.
 
 Note that the multiplication by the cofactor 392 can be safely
 computed with nine doublings and two additions via the double and add
