@@ -341,7 +341,8 @@ representations helps save time by avoiding redundant computations.
 
 These addition laws are complete: they have no exceptional cases, and
 therefor can be used in any algorithm for computing scalar multiples
-without worries about wrong answers for rare points.
+without worries about wrong answers for rare points. Note that we do not
+explictly note the point format in every operation.
 
 Below, we list the explicit formulas for the required point
 operations. These formulas were adapted from {{Twisted}} and
@@ -548,19 +549,19 @@ The 8 points in the table are generated using ADD_core as follows:
 
 ~~~~~
 T[0] is P in R2
-T[1] is T[0]+Q  (P+Q)
+T[1] is ADD_core(Q, T[0])  (P+Q)
 Convert T[1] to R2
-T[2] is T[0]+R  (P+R)
+T[2] is ADD_Core(R, T[0])  (P+R)
 Convert T[2] to R2
-T[3] is T[1]+R  (P+Q+R)
+T[3] is ADD_Core(R, T[1])  (P+Q+R)
 Convert T[3] to R2
-T[4] is T[0]+S  (P+S)
+T[4] is ADD_Core(S, T[0])  (P+S)
 Convert T[4] to R2
-T[5] is T[1]+S  (P+Q+S)
+T[5] is ADD_Core(S, T[1])  (P+Q+S)
 Convert T[5] to R2
-T[6] is T[2]+S  (P+R+S)
+T[6] is ADD_Core(S, T[2])  (P+R+S)
 Convert T[6] to R2
-T[7] is T[3]+S  (P+Q+R+S)
+T[7] is ADD_Core(S, T[3])  (P+Q+R+S)
 Convert T[7] to R2
 ~~~~~
 
@@ -691,7 +692,8 @@ failures.
 
 # IANA Considerations
 
-IANA need take no action.
+[RFC Editor: please remove this section prior to publication]
+This document has no IANA actions.
 
 # Security Considerations
 
