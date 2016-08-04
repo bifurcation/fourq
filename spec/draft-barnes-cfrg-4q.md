@@ -159,11 +159,11 @@ informative:
 This document specifies an twisted Edwards curve that takes advantage
 of arithmetic over the field GF(2^127-1) and endomorphisms to achieve
 the speediest Diffie-Hellman key agreements over a group of order
-approximately 2^246. The time taken for a single variable-base
-exponentiation is half that of Curve25519, and when not using
-endomorphisms is eighty percent of that taken by Curve25519. These
-performance gains do not depend on using large vector units, in contrast
-to Kummer surfaces.
+approximately 2^246. Curve4Q implementations are roughly twice as
+fast as those of Curve25519, and when not using endomorphisms take
+eighty percent of the time taken by Curve25519. These performance
+gains do not depend on using large vector units, in contrast to Kummer
+surfaces.
 
 --- middle
 
@@ -191,14 +191,14 @@ Diffie-Hellman key exchanges, but it was not possible to combine them
 all, as the demand for two distinct endomorphisms significantly restricts
 the curves that can be used.
 
-As described in {{Curve4Q}}, Curve4Q is the only known elliptic curve
-that permits a four dimensional decomposition over the highly
-efficient field GF(p^2) with p = 2^127 - 1 and has a prime order
-subgroup of order approximately 2^246. No known elliptic curve
-with such a decomposition has a larger prime order subgroup.  This
-"uniqueness" allays concerns about selecting curves vulnerable to
-undisclosed attacks. These speed benefits do not depend on vectorization,
-making them attractive even on constrained devices.
+This recently changed after careful examination of known families of
+curves with two endomorphisms.  As described in {{Curve4Q}}, Curve4Q
+is the only known elliptic curve that permits a four dimensional
+decomposition over the highly efficient field GF(p^2) with p = 2^127 -
+1 and has a prime order subgroup of order approximately 2^246. No
+known elliptic curve with such a decomposition has a larger prime
+order subgroup over this field.  This "uniqueness" allays concerns
+about selecting curves vulnerable to undisclosed attacks.
 
 
 # Mathematical Prerequisites
@@ -236,11 +236,20 @@ d = 0x00000000000000e40000000000000142 +
 ~~~~~
 
 Let E(GF(p^2)) be the set of pairs (x, y) of elements of GF(p^2)
-satisfying this equation.  This set forms an abelian group with group
-law given later in this document for which (0,1) is the neutral
-element and the inverse of a point (x, y) is given by (-x, y). The
-order of this group is \#E = 2^3 · 7^2 · N, where N is the following
-246-bit prime:
+satisfying this equation. This set forms a group with the addition operation
+shown below:
+~~~~
+                    /   x1*y2+y1*x2         y1*y2+x1*x2   \
+(x1, y1)+(x2, y2) = |------------------,------------------|
+                    \ 1+d*x1*y1*x2*y2    1-d*x1*y1*x2*y2  /
+
+~~~~
+
+As d is not a square, and -1 is, this formula never involves a
+division by zero when applied to points on the curve. The identity
+element is (0, 1), and the inverse of (x,y) is (-x, y).  The order of
+this group is \#E = 2^3 · 7^2 · N, where N is the following 246-bit
+prime:
 
 ~~~~~
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
@@ -252,7 +261,7 @@ m such that Q = m\*P. This is the elliptic curve discrete logarithm
 problem, which is closely related to the security of Diffie-Hellman
 exchanges as the best known attacks on the Diffie- Hellman problem
 involve solving the discrete logarithm problem. The best known
-approaches take 2^120 group operations or so.
+algorithms take approximately 2^120 group operations.
 
 This group has two different efficiently computable endomorphisms, as
 described in {{Curve4Q}}. As discussed in {{GLV}} and {{GLS}} these
@@ -333,16 +342,19 @@ repeated additions of the same point. Converting between these
 representations is straightforward.
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For
-addition, we first define ADD_core that takes an R2 and R3 point and
-produces an R1 point. This can be used to implement an operation ADD
-which takes an R1 and R2 point as inputs, converts the R1 point to R3,
-and then executes ADD_core. Exposing these operations and the multiple
-representations helps save time by avoiding redundant computations.
+addition, we first define an operation ADD_core that takes an R2 and
+R3 point and produces an R1 point. This can be used to implement an
+operation ADD which takes an R1 and R2 point as inputs, converts the
+R1 point to R3, and then executes ADD_core. Exposing these operations
+and the multiple representations helps save time by avoiding redundant
+computations: the conversion of the first argument to ADD can be done once
+if the argument will be used in multiple additions.
 
 These addition laws are complete: they have no exceptional cases, and
-therefor can be used in any algorithm for computing scalar multiples
+therefore can be used in any algorithm for computing scalar multiples
 without worries about wrong answers for rare points. Note that we do not
-explictly note the point format in every operation.
+explicitly note the point format every time an addition or doubling is used,
+and assume that conversions are done when required.
 
 Below, we list the explicit formulas for the required point
 operations. These formulas were adapted from {{Twisted}} and
@@ -443,19 +455,19 @@ answer.
 
 ## Multiplication with endomorphisms
 
-This algorithm computes phi(P), psi(P), and psi(phi(P)), where phi and
-psi are endomorphisms defined below, and then computes [m]\*P =
-[a_1]\*P + [a_2]\*phi(P) + [a_3]\*psi(P) + [a_4]\*psi(phi(P)), where
-a_1, a_2, a_3, and a_4 are short scalars that depend on m. This
-multiexponentation is then computed using a small table and 64
-doublings and additions after recoding a_1, a_2, a_3 and a_4.  The
-algorithm is considerably faster then the one without endomorphisms
-above.
+This algorithm makes use of the identity [m]\*P = [a_1]\*P +
+[a_2]\*phi(P) + [a_3]\*psi(P) + [a_4]\*psi(phi(P)), where a_1, a_2,
+a_3, and a_4 are short scalars that depend on m. The
+multiexponentiation can be computed using a small table of precomputed
+points and 64 doublings and additions. This is considerably fewer
+operations then the algorithm above, at the cost of a more complicated
+implementation.
 
-We describe each part separately: the computation of the
-endomorphisms, the scalar decomposition and recoding, and lastly the
-computation of the final results. Each section refers to constants
-listed in an appendix in order of appearance.
+We describe each phase of the computation separately: the computation
+of the endomorphisms, the scalar decomposition and recoding, the
+creation of the table of precomputed points and lastly the computation
+of the final results. Each section refers to constants listed in an
+appendix in order of appearance.
 
 
 ### Endomorphisms and Isogenies
@@ -577,12 +589,12 @@ b2, b3, b4.  In addition we have l1, l2, l3, l4 which are long
 integers used to implement rounding.
 
 Let c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 +
-b4. Next compute ti = floor(li\*m/2^256) for 1 between 1 and 4, and
+b4. Next compute ti = floor(li\*m/2^256) for i between 1 and 4, and
 then compute a = (a1, a2, a3, a4) = (m,0,0,0) - t1\*b1 - t2\*b2 -
 t3\*b3 - t4\*b4. Precisely one of a+c and a+c' has an odd first
-coordinate: this is the one fed into the scalar recoding step. The entries
-of this vector are 64 bits, so intermediate values can be truncated to
-this width.
+coordinate: this is the one fed into the scalar recoding step. The
+entries of this vector are 64 bits, so intermediate values in the
+calculation can be truncated to this width.
 
 The second step takes the vector v=(v1, v2, v3, v4) from the
 previous step and outputs two arrays m[0]..m[64] and d[0]..d[64]. Each
@@ -682,8 +694,7 @@ provided that it agrees with the above function on all inputs and
 failure cases, and does not leak information about secret keys. For
 example, refer to the constant-time fixed-base multiplication
 algorithm implemented in {{FourQlib}} to accelerate the computation of
-DH(m, G), or various fixed-window implementation options that may
-offer better performance on some machines.
+DH(m, G).
 
 As the cofactor is greater then one, Curve4Q MUST NOT be used with
 ordinary Diffie-Hellman, but MUST always be used for Diffie-Hellman
@@ -723,6 +734,12 @@ operations used do in fact avoid leaking information. Using
 independent private scalars for each operation is recommended to
 reduce the impact of side-channel attacks, however this is not
 possible for many applications of Diffie-Hellman key agreement.
+
+In the future quantum computers will render the discrete logarithm
+problem easy on all abelian groups through Schorr's algorithm. Data
+intended to remain confidential for significantly extended periods of
+time SHOULD NOT be protected with any elliptic curve, Diffie-Hellman,
+or factorization based primitive.
 
 # Acknowledgments
 
