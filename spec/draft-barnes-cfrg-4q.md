@@ -623,8 +623,8 @@ We now describe the last step in the endomorphism based algorithm for
 computing scalar multiplication. On inputs m and P, the algorithm first
 computes the precomputed table T with 8 points (see "Table
 Precomputation") and then carries out the scalar decomposition and
-scalar recoding to produce the two arrays m[0]..m[64] and d[0]..d[64]
-(see "Scalar Decomposition and Recoding").
+scalar recoding to produce the two arrays m[0]..m[64] and d[0]..d[64]. 
+See "Scalar Decomposition and Recoding".
 
 Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then the
 multiplication is completed by the following pseudocode:
@@ -720,7 +720,7 @@ rejected and failure signaled to higher levels. Notoriously
 {{?RFC5246}} without {{?RFC7627}} is such a protocol.
 
 Implementations MUST ensure that execution of branches and
-memory addresses accessed does not depend on secret data. 
+memory addresses accessed do not depend on secret data. 
 The time variability introduced by secret-dependent operations 
 have been exploited in the past via timing and cache attacks to break
 implementations.  Side-channel analysis is a constantly moving field,
