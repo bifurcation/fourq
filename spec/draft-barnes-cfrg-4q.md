@@ -704,7 +704,7 @@ This document has no IANA actions.
 
 The best known algorithms for the computation of discrete logarithms
 on Curve4Q are parallel versions of the Pollard rho algorithm in
-[Distinguished]. On Curve4Q these attacks take on the order of 2^120 group
+[Distinguished]. On Curve4Q these attacks take on the order of 2^123 group
 operations to compute a single discrete logarithm. The additional
 endomorphisms have large order, and so cannot be used to accelerate
 generic attacks. Quadratic fields are not affected by any of the index
