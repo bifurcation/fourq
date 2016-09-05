@@ -180,25 +180,24 @@ By using curves over quadratic extensions there are more endomorphism families
 to pick from, and the field operations become more efficient compared to prime
 fields of the same size.  The ideal case is given by curves equipped with two
 distinct endomorphisms, so that it becomes possible to divide scalars into four
-parts, and defined over the field GF((2^127-1)^2), which offers extremely
-efficient arithmetic as the modulus is a Mersenne prime.  Together, these
-improvements substantially reduce computation time compared to other proposed
-Diffie-Hellman key exchange and digital signature schemes.  However, the
-combined availability of these features severely restricts the curves that can
-be used for cryptographic applications.
+parts.  We also focus on curves defined over the field GF(p^2) for the Mersenne
+prime p = 2^127 - 1, which offers extremely efficient arithmetic.  Together,
+these improvements substantially reduce computation time compared to other
+proposed Diffie-Hellman key exchange and digital signature schemes.  However,
+the combined availability of these features severely restricts the curves that
+can be used for cryptographic applications.
 
 As described in {{Curve4Q}}, Curve4Q is the only known elliptic curve that
 permits a four dimensional decomposition over the highly efficient field GF(p^2)
 with p = 2^127 - 1 and has a prime order subgroup of order approximately 2^246,
-which provides around 128 bits of security. No known elliptic curve with such a
-decomposition has a larger prime order subgroup over this field.  This
+which provides around 128 bits of security. No other known elliptic curve with
+such a decomposition has a larger prime order subgroup over this field.  This
 "uniqueness" allays concerns about selecting curves vulnerable to undisclosed
 attacks.
 
-Curve4Q also offers high flexibility to realize high-speed cryptographic schemes
-including Diffie-Hellman key exchange and digital signatures (e.g., see
-{{SchnorrQ}}).  This document focuses on Diffie-Hellman key exchange.
-
+Curve4Q can be used to implement Diffie-Hellman key exchange, as described
+below.  It is also possible to use Curve4Q as the basis for digital signature
+scheme (e.g., {{SchnoorQ}}).
 
 # Mathematical Prerequisites
 
@@ -215,7 +214,8 @@ A + B = (a0 + b0) + (a1 + b1)*i
 
 A - B = (a0 - b0) + (a1 - b1)*i
 
-A * B = (a0*b0 - a1*b1) + (a0*b1 + a1*b0)*i = (a0*b0 - a1*b1) + ((a0+a1)*(b0+b1)-(a0*b0 - a1*b1))*i
+A * B = (a0*b0 - a1*b1) + ((a0+a1)*(b0+b1)-(a0*b0 - a1*b1))*i
+      = (a0*b0 - a1*b1) + (a0*b1 + a1*b0)*i
 
 A * A = (a0+a1)*(a0-a1) + 2*a0*a1*i
 
@@ -262,9 +262,9 @@ Diffie-Hellman problem involve solving the discrete logarithm problem. The best
 known algorithms take approximately 2^123 group operations.
 
 This group has two different efficiently computable endomorphisms, as described
-in {{Curve4Q}}. As discussed in {{GLV}} and {{GLS}} these endomorphisms permit
-to turn multiplication by a large scalar into multiple multiplications by
-smaller scalars, which can be evaluated in much less time overall.
+in {{Curve4Q}}. As discussed in {{GLV}} and {{GLS}} these endomorphisms
+multiplication by a large scalar to be computed using multiple multiplications
+by smaller scalars, which can be evaluated in much less time overall.
 
 # Representation of Curve Points
 
@@ -316,10 +316,10 @@ values of y0 and y1 MUST be less then p.
 
 Below, we present two algorithms for scalar multiplication on the above curve:
 one uses a simple fixed-window exponentiation without exploiting endomorphisms,
-while the other uses endomorphisms to accelerate computation.
-The execution of operations in both algorithms has a regular pattern in order
-to facilitate protection against timing and simple side channel attacks.  Both
-algorithms use the same addition and doubling formulas.
+while the other uses endomorphisms to accelerate computation.  The execution of
+operations in both algorithms has a regular pattern in order to enable
+constant-time implementations and protect against timing and simple side
+channel attacks.  Both algorithms use the same addition and doubling formulas.
 
 First, we discuss explicit formulas and efficient projective coordinate
 representations.
@@ -415,8 +415,8 @@ this task.
 
 ~~~~
 for i=0 to 61:
-    d[i] = (m mod 32)/16
-    m = (m - d[i])/16
+    d[i] = (m mod 32) - 16
+    m = (m - d[i]) / 16
 d[62] = m
 ~~~~
 
@@ -435,8 +435,8 @@ for i from 61 to 0:
     ind = (abs(d[i])-1)/2
     sign = sgn(d[i])
     S = sign*T[ind]
-    Q = ADD(Q,S)
-return Q = (X/Z,Y/Z)
+    Q = ADD(Q, S)
+return Q = (X/Z, Y/Z)
 ~~~~
 
 As sign is either -1 or 1, the multiplication sign*T[ind] is simply a
@@ -450,10 +450,10 @@ points: it will produce the wrong answer.
 
 This algorithm makes use of the identity [m]\*P = [a_1]\*P + [a_2]\*phi(P) +
 [a_3]\*psi(P) + [a_4]\*psi(phi(P)), where a_1, a_2, a_3, and a_4 are 64-bit
-scalars that depend on m. The multiexponentiation can be computed using a small
-table of 8 precomputed points and 64 doublings and additions. This is
-considerably fewer operations than the algorithm above, at the cost of a
-slightly more complicated implementation.
+scalars that depend on m (which, being less than N, has ~246 bits). The
+multiexponentiation can be computed using a small table of 8 precomputed points
+and 64 doublings and additions. This is considerably fewer operations than the
+algorithm above, at the cost of a slightly more complicated implementation.
 
 We describe each phase of the computation separately: the computation of the
 endomorphisms, the scalar decomposition and recoding, the creation of the table
@@ -574,8 +574,9 @@ into a form that can be used to efficiently and securely compute the scalar
 multiplication.
 
 The decomposition step uses four fixed vectors called b1, b2, b3, b4, with 64
-bit entries each.  In addition, we have l1, l2, l3, l4, which are long integers
-used to implement rounding.  All these values are listed in the appendix.
+bit entries each.  In addition, we have l1, l2, l3, l4, which are 192-bit
+integers used to implement rounding.  All these values are listed in the
+appendix.
 
 First, compute c = 2\*b1 - b2 + 5\*b3 + 2\*b4 and c' = 2\*b1 - b2 + 5\*b3 + b4.
 Note that c and c' can be precalculated.  Next, compute ti = floor(li\*m/2^256)
@@ -588,7 +589,8 @@ in the calculation above can be truncated to this width.
 The recoding step takes the vector v=(v1, v2, v3, v4) from the previous step and
 outputs two arrays m[0]..m[64] and d[0]..d[64]. Each entry of d is between 0 and
 7, and each entry in m is -1 or 0. The recoding algorithm is detailed below.
-bit(x, n) denotes the nth bit of x.
+bit(x, n) denotes the nth bit of x, counting from least significant to most,
+starting with 1.
 
 ~~~~~
 m[64]=-1
@@ -606,22 +608,20 @@ d[64] = v2+2*v3+4*v4
 
 We now describe the last step in the endomorphism based algorithm for computing
 scalar multiplication. On inputs m and P, the algorithm first computes the
-precomputed table T with 8 points (see "Table Precomputation") and then carries
+precomputed table T with 8 points (see {{table-precomputation}}) and then carries
 out the scalar decomposition and scalar recoding to produce the two arrays
-m[0]..m[64] and d[0]..d[64].  See "Scalar Decomposition and Recoding".
+m[0]..m[64] and d[0]..d[64].  See {{scalar-decomposition-and-recoding}}.
 
 Define s[i] to be 1 if m[i] is -1 and -1 if m[i] is 0. Then the multiplication
 is completed by the following pseudocode:
 
 ~~~~~
-
 Q = s[64]*T[d[64]]
 Convert Q to R4
 for i=63 to 0 do:
     Q = DBL(Q)
     Q = ADD(Q, s[i]*T[di])
-return Q = (X/Z,Y/Z)
-
+return Q = (X/Z, Y/Z)
 ~~~~~
 
 Multiplication by s[i] is simply a conditional negation. To negate an R2 point
@@ -651,18 +651,20 @@ Return [m]*Q in affine coordinates
 The role of the separate multiplication by 392 is to ensure that Q is an
 N-torsion point so that the scalar multiplication algorithms above may be used
 safely to produce correct results.  In other words, as the cofactor is greater
-than one, Curve4Q MUST NOT be used with ordinary Diffie-Hellman; it MUST always
-be used for Diffie-Hellman with cofactor.  Note that the multiplication by the
-cofactor 392 can be safely computed with nine doublings and two additions via
-the double and add method.
+than one, Diffie-Hellman computations using Curve4Q MUST always use cofactor
+clearing (as defined above). Note that the multiplication by the cofactor 392
+can be safely computed with nine doublings and two additions via the double and
+add method.
+
+[[ RLB: Why not just transform the coefficient instead? ]]
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared
-key: both pick any random string of 32 bytes, mA and mB, respectively. Alice
+key: each picks a random string of 32 bytes, mA and mB, respectively. Alice
 computes the public key A = Compress(DH(mA, G)), and Bob computes the public key
 B = Compress(DH(mB, G)). They exchange A and B, and then Alice computes KAB =
 DH(mA, Expand(B)) while Bob computes KBA = DH(mB, Expand(A)), which produces the
 shared point K = KAB = KBA. The y coordinate of K, represented as a 32 byte
-string as detailed in the section "Representation of Curve Points" is the shared
+string as detailed in {{representation-of-curve-points}} is the shared
 secret.
 
 If the received strings are not valid points, the DH function has failed to
@@ -705,14 +707,14 @@ attacks to break implementations.  Side-channel analysis is a constantly moving
 field, and implementers must be extremely careful to ensure that operations do
 not leak any secret information. Using ephemeral private scalars for each
 operation (ideally, limiting the use of each private scalar to one single
-operation) is an effective measure to reduce the impact of side-channel attacks.
-However, this might not be possible for many applications of Diffie-Hellman key
-agreement.
+operation) can reduce the impact of side-channel attacks.  However, this might
+not be possible for many applications of Diffie-Hellman key agreement.
 
-In the future quantum computers will render the discrete logarithm problem easy
-on all abelian groups through Schor's algorithm. Data intended to remain
+In the future quantum computers may render the discrete logarithm problem easy
+on all abelian groups through Shor's algorithm. Data intended to remain
 confidential for significantly extended periods of time SHOULD NOT be protected
-with any elliptic curve, finite field, or factorization based primitive.
+with any primitive based on the hardness of factoring or the discrete log
+problem (elliptic curve or finite field).
 
 --- back
 
