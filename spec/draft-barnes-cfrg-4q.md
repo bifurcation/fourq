@@ -14,11 +14,6 @@ pi: [toc, sortrefs, symrefs]
 
 author:
  -
-       ins: R. Barnes
-       name: Richard Barnes
-       organization: Mozilla
-       email: rlb@ipv.sx
- -
        ins: W. Ladd
        name: Watson Ladd
        organization: UC Berkeley
@@ -28,6 +23,11 @@ author:
        name: Patrick Longa
        organization: Microsoft Research
        email: plonga@microsoft.com
+ -
+       ins: R. Barnes
+       name: Richard Barnes
+       organization: Mozilla
+       email: rlb@ipv.sx
 
 informative:
 
