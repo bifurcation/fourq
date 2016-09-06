@@ -188,12 +188,13 @@ signature schemes.  However, the combined availability of these features
 severely restricts the curves that can be used for cryptographic applications.
 
 As described in {{Curve4Q}}, the elliptic curve "Curve4Q" defined in this
-document is the only known elliptic curve that permits a four dimensional
-decomposition (using tw endomorphisms) over GF(p^2) and has a prime order
-subgroup of order approximately 2^246, which provides around 128 bits of
-security. No other known elliptic curve with such a decomposition has a larger
-prime order subgroup over this field.  This "uniqueness" allays concerns about
-selecting curves vulnerable to undisclosed attacks.
+document is the only known elliptic curve that (1) permits a four dimensional
+decomposition (using two endomorphisms) over GF(p^2) and (2) has a large prime
+order subgroup.  The order of this subgroup is approximately 2^246, which
+provides around 128 bits of security. No other known elliptic curve with such a
+decomposition has a larger prime order subgroup over this field.  This
+"uniqueness" allays concerns about selecting curves vulnerable to undisclosed
+attacks.
 
 Curve4Q can be used to implement Diffie-Hellman key exchange, as described
 below.  It is also possible to use Curve4Q as the basis for digital signature
@@ -214,14 +215,14 @@ A + B = (a0 + b0) + (a1 + b1)*i
 
 A - B = (a0 - b0) + (a1 - b1)*i
 
-A * B = (a0*b0 - a1*b1) + ((a0+a1)*(b0+b1)-(a0*b0 - a1*b1))*i
+A * B = (a0*b0 - a1*b1) + ((a0 + a1)*(b0 + b1)-(a0*b0 - a1*b1))*i
       = (a0*b0 - a1*b1) + (a0*b1 + a1*b0)*i
 
-A * A = (a0+a1)*(a0-a1) + 2*a0*a1*i
+A * A = (a0 + a1)*(a0 - a1) + 2*a0*a1*i
 
 conj(A) = a0 - a1*i
 
-1/A = conj(A) / (a0^2+a1^2)
+1/A = conj(A) / (a0^2 + a1^2)
 ~~~~
 
 The GF(p) division in the formula for 1/A can be computed using exponentiation,
@@ -243,14 +244,14 @@ equation. This set forms a group with the addition operation (x1, y1) + (x2, y2)
 
 ~~~~
           x1 * y2 + y1 * x2                y1 * y2 + x1 * x2
-x3 = --------------------------,  y3 = --------------------------
-      1 + d * x1 *y1 * x2 * y2          1 - d * x1 *y1 * x2 * y2
+x3 = ---------------------------, y3 = ---------------------------
+      1 + d * x1 * y1 * x2 * y2         1 - d * x1 * y1 * x2 * y2
 ~~~~
 
 As d is not a square in GF(p^2), and -1 is, this formula never involves a
 division by zero when applied to points on the curve. That is, the formula is
 complete and works without exceptions for any input in E(GF(p^2)).  The
-identity element is (0, 1), and the inverse of (x,y) is (-x, y).  The order of
+identity element is (0, 1), and the inverse of (x, y) is (-x, y).  The order of
 this group is \#E = 2^3 · 7^2 · N, where N is the following 246-bit prime:
 
 ~~~~~
@@ -272,8 +273,8 @@ by smaller scalars, which can be evaluated in much less time overall.
 # Representation of Curve Points
 
 Elements a in GF(p) are represented as 16 byte little endian integers which are
-the numbers in the range [0, p). The 16 bytes b[0], b[1],... b[15] represent
-b[0]+256\*b[1]+256^2\*b[2]+...+256^15\*b[15].  Since we are representing numbers
+the numbers in the range [0, p). The 16 bytes b[0], b[1], ... b[15] represent
+b[0] + 256\*b[1] + 256^2\*b[2] + ... + 256^15\*b[15].  Since we are representing numbers
 in the range [0, 2^127-1), the top bit of b[15] is always zero.
 
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation
@@ -282,7 +283,7 @@ compressed form as the representation of y with a modified top bit. This top bit
 is used to disambiguate between x and -x.
 
 To carry out this disambiguation we order the elements of GF(p^2) as follows: to
-compare x = x0+x1\*i with y = y0+y1\*i assuming all coordinates are in [0, p) we
+compare x = x0 + x1\*i with y = y0 + y1\*i assuming all coordinates are in [0, p) we
 compare x0 with y0, and, if they are equal, compare x1 with y1. This is the
 lexicographic ordering on (x0, x1) where each value is in the range [0, p).
 
@@ -300,8 +301,9 @@ To decode an encoded a point from a 32-byte sequence B:
 * Check that the high-order bit of B[15] is zero
 * Parse out the encoded values y = y0 + y1 * i and s
 * Check that y0 and y1 are both less than p
-* Compute x = (y^2-1)\*InvSqrt((y^2-1)\*(d \* y^2-1)), where InvSqrt(z)=1/sqrt(z)
-  (see {{inversion-and-square-roots}})
+* Compute x = (y^2 - 1) * InvSqrt((y^2 - 1) * (d * y^2 - 1)), where
+  InvSqrt(z)=1/sqrt(z) (see {{inversion-and-square-roots}})
+* If the computation of x failed, decoding fails
 * If s is 0, return the smaller of x and -x (in the lexicographic ordering)
 * If s is 1, return the larger of x and -x
 
@@ -336,19 +338,19 @@ representations.
 ## Alternative Point Representations and Addition Laws
 
 We use coordinates based on extended twisted Edwards coordinates introduced in
-{{TwistedRevisited}}: the tuple (X, Y, Z, T) with Z nonzero and Z \* T = X \* Y
+{{TwistedRevisited}}: the tuple (X, Y, Z, T) with Z nonzero and Z * T = X * Y
 corresponds to a point (x, y) satisfying x = X/Z and y = Y/Z. The neutral point
-in this representation is (0,1,1,0). The following slight variants are used in
+in this representation is (0, 1, 1, 0). The following slight variants are used in
 the optimized scalar multiplication algorithm in order to save computations:
-point representation R1 is given by (X,Y,Z,Ta,Tb), where T=Ta\*Tb;
-representation R2 is (N, D, E, F) = (X+Y,Y-X,2Z,2dT); representation R3 is (N,
-D, Z, T) = (X+Y,Y-X,Z,T); and representation R4 is (X,Y,Z). Similar "caching"
+point representation R1 is given by (X, Y, Z, Ta, Tb), where T=Ta * Tb;
+representation R2 is (N, D, E, F) = (X + Y, Y- X, 2Z, 2dT); representation R3 is (N,
+D, Z, T) = (X + Y, Y - X, Z, T); and representation R4 is (X, Y, Z). Similar "caching"
 techniques were discussed in {{TwistedRevisited}} to accelerate repeated
 additions of the same point. Converting between these representations is
 straightforward.
 
-* R1: (X, Y, Z, Ta, Tb), Ta \* Tb = T
-* R2: (N, D, E, F) = (X + Y, Y - X, 2 \* Z, 2 \* d \* T)
+* R1: (X, Y, Z, Ta, Tb), Ta * Tb = T
+* R2: (N, D, E, F) = (X + Y, Y - X, 2 * Z, 2 * d * T)
 * R3: (N, D, Z, T) = (X + Y, Y - X, Z, T)
 * R4: (X, Y, Z)
 
@@ -450,7 +452,7 @@ for i from 61 to 0:
 return Q
 ~~~~
 
-As sign is either -1 or 1, the multiplication sign*T[ind] is simply a
+As sign is either -1 or 1, the multiplication sign * T[ind] is simply a
 conditional negation.  To negate a point (N, D, E, F) in R2 form one computes
 (D, N, E, -F). The table lookups and conditional negations must be carefully
 implemented as described in ``Security Considerations'' to avoid side-channel
@@ -539,7 +541,7 @@ chi(X1, Y1, Z1):
    C = conj(Z1)^2
    D = A^2
    F = B^2
-   G = B*(D + cpsi2 * C)
+   G = B * (D + cpsi2 * C)
    H = -(D + cpsi4 * C)
    X2 = cpsi1 * A * C * H
    Y2 = G * (D + cpsi3 * C)
@@ -555,8 +557,8 @@ into a form that can be used to efficiently and securely compute the scalar
 multiplication.
 
 The decomposition step uses four fixed vectors called b1, b2, b3, b4, with four
-64 bit entries each.  In addition, we have 192-bit integer constants L1, L2, L3,
-L4, which are used to implement rounding.  All these values are listed in
+64 bit entries each.  In addition, we have integer constants L1, L2, L3, L4,
+which are used to implement rounding.  All these values are listed in
 {{constants}}.  In addition, we use two constant vectors derived from these
 inputs:
 
@@ -565,10 +567,10 @@ inputs:
 
 Given m, first compute t[i] = floor(L[i] * m / 2^256) for i between 1 and 4.
 Then compute the vector sum a = (m, 0, 0, 0) - t1 b1 - t2 b2 - t3 b3 - t4 b4.
-Precisely one of a+c and a+c' has an odd first coordinate: this is the vector v
-that is fed into the scalar recoding step. Note that the entries of this vector
-are 64 bits, so intermediate values in the calculation above can be truncated to
-this width.
+Precisely one of a + c and a + c' has an odd first coordinate: this is the
+vector v that is fed into the scalar recoding step. Note that the entries of
+this vector are 64 bits, so intermediate values in the calculation above can be
+truncated to this width.
 
 The recoding step takes the vector v=(v1, v2, v3, v4) from the previous step and
 outputs two arrays m[0]..m[64] and d[0]..d[64]. Each entry of d is between 0 and
@@ -577,16 +579,18 @@ bit(x, n) denotes the nth bit of x, counting from least significant to most,
 starting with 0.
 
 ~~~~~
-m[64]=-1
-for i=0 to 63 do:
-   d[i] = 0
-   m[i] = bit(v1, i+1)
+m[64] = -1
+for i = 0 to 63 do:
+    b1 = bit(v1, i+1)
+    d[i] = 0
+    m[i] = b1
 
-   for j = 2 to 4 do:
-      d[i] = d[i] + bit(vj, 0) * 2^(j-2)
-      c = (bit(v1, i+1) or bit(vj,0)) xor bit(v1, i+1)
-      vj = vj / 2 + c
-d[64] = v2+2*v3+4*v4
+    for j = 2 to 4 do:
+        bj = bit(vj, 0)
+        d[i] = d[i] + bj * 2^(j-2)
+        c = (b1 or bj) xor b1
+        vj = vj / 2 + c
+d[64] = v2 + 2 * v3 + 4 * v4
 ~~~~~
 
 ### Final Computation
@@ -605,40 +609,40 @@ Q is phi(P) in R3
 R is psi(P) in R3
 S is psi(Q) in R2
 T[0] is P in R2
-T[1] is ADD_core(Q, T[0])  # (P+Q)
+T[1] is ADD_core(Q, T[0])  # (P + Q)
 Convert T[1] to R2
-T[2] is ADD_Core(R, T[0])  # (P+R)
+T[2] is ADD_Core(R, T[0])  # (P + R)
 Convert T[2] to R2
-T[3] is ADD_Core(R, T[1])  # (P+Q+R)
+T[3] is ADD_Core(R, T[1])  # (P + Q + R)
 Convert T[3] to R2
-T[4] is ADD_Core(S, T[0])  # (P+S)
+T[4] is ADD_Core(S, T[0])  # (P + S)
 Convert T[4] to R2
-T[5] is ADD_Core(S, T[1])  # (P+Q+S)
+T[5] is ADD_Core(S, T[1])  # (P + Q + S)
 Convert T[5] to R2
-T[6] is ADD_Core(S, T[2])  # (P+R+S)
+T[6] is ADD_Core(S, T[2])  # (P + R + S)
 Convert T[6] to R2
-T[7] is ADD_Core(S, T[3])  # (P+Q+R+S)
+T[7] is ADD_Core(S, T[3])  # (P + Q + R + S)
 Convert T[7] to R2
 ~~~~~
 
 Second, apply the scalar decomposition and recoding algorithm from
 {{scalar-decomposition-and-recoding}} to m, to produce the two arrays
-m[0]..m[64] and d[0]..d[64]. 
+m[0]..m[64] and d[0]..d[64].
 
 Define s[i] to be 1 if m[i] is 1 and -1 if m[i] is 0. Then the multiplication
 is completed as follows:
 
 ~~~~~
-Q = s[64]*T[d[64]]
+Q = s[64] * T[d[64]]
 Convert Q to R4
 for i=63 to 0 do:
     Q = DBL(Q)
-    Q = ADD(Q, s[i]*T[di])
+    Q = ADD(Q, s[i] * T[di])
 return Q = (X/Z, Y/Z)
 ~~~~~
 
 Multiplication by s[i] is simply a conditional negation. To negate an R2 point
-(N, D, E, F) one computes (D, N, E ,-F). It is important to do this (as well as
+(N, D, E, F) one computes (D, N, E , -F). It is important to do this (as well as
 the table lookup) in constant time, i.e., the execution of branches and memory
 accesses MUST NOT depend on secret values (see ``Security Considerations'' for
 more details).
@@ -674,6 +678,17 @@ N-torsion point so that the scalar multiplication algorithms above may be used
 safely to produce correct results.  In other words, as the cofactor is greater
 than one, Diffie-Hellman computations using Curve4Q MUST always use cofactor
 clearing (as defined above).
+
+The base point G for Diffie-Hellman operations has the following affine
+coordinates:
+
+~~~~
+Gx = 0x1A3472237C2FB305286592AD7B3833AA +
+     0x1E1F553F2878AA9C96869FB360AC77F6\*i
+Gy = 0x0E3FEE9BA120785AB924A2462BCBB287 +
+     0x6E1C4AF8630E024249A7C344844C8B5C\*i
+G = (X, Y)
+~~~~
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared
 key: each picks a random string of 32 bytes, mA and mB, respectively. Alice
@@ -746,36 +761,36 @@ ctaudual = 0x4aa740eb230586529ecaa6d9decdf034 +
 ~~~~~
 
 ~~~~~
-cphi0 = 0x0000000000000005fffffffffffffff7 + 
+cphi0 = 0x0000000000000005fffffffffffffff7 +
         0x2553a0759182c3294f65536cef66f81a * i
 cphi1 = 0x00000000000000050000000000000007 +
         0x62c8caa0c50c62cf334d90e9e28296f9 * i
-cphi2 = 0x000000000000000f0000000000000015 + 
+cphi2 = 0x000000000000000f0000000000000015 +
         0x78df262b6c9b5c982c2cb7154f1df391 * i
-cphi3 = 0x00000000000000020000000000000003 + 
+cphi3 = 0x00000000000000020000000000000003 +
         0x5084c6491d76342a92440457a7962ea4 * i
 cphi4 = 0x00000000000000030000000000000003 +
         0x12440457a7962ea4a1098c923aec6855 * i
-cphi5 = 0x000000000000000a000000000000000f + 
+cphi5 = 0x000000000000000a000000000000000f +
         0x459195418a18c59e669b21d3c5052df3 * i
-cphi6 = 0x00000000000000120000000000000018 + 
+cphi6 = 0x00000000000000120000000000000018 +
         0x0b232a8314318b3ccd3643a78a0a5be7 * i
 cphi7 = 0x00000000000000180000000000000023 +
         0x3963bc1c99e2ea1a66c183035f48781a * i
-cphi8 = 0x00000000000000aa00000000000000f0 + 
+cphi8 = 0x00000000000000aa00000000000000f0 +
         0x1f529f860316cbe544e251582b5d0ef0 * i
-cphi9 = 0x00000000000008700000000000000bef + 
+cphi9 = 0x00000000000008700000000000000bef +
         0x0fd52e9cfe00375b014d3e48976e2505 * i
 ~~~~~
 
 ~~~~~
-cpsi1 = 0x2af99e9a83d54a02edf07f4767e346ef + 
+cpsi1 = 0x2af99e9a83d54a02edf07f4767e346ef +
         0x00000000000000de000000000000013a * i
-cpsi2 = 0x00000000000000e40000000000000143 + 
+cpsi2 = 0x00000000000000e40000000000000143 +
         0x21b8d07b99a81f034c7deb770e03f372 * i
-cpsi3 = 0x00000000000000060000000000000009 + 
+cpsi3 = 0x00000000000000060000000000000009 +
         0x4cb26f161d7d69063a6e6abe75e73a61 * i
-cpsi4 = 0x7ffffffffffffff9fffffffffffffff6 + 
+cpsi4 = 0x7ffffffffffffff9fffffffffffffff6 +
         0x334d90e9e28296f9c59195418a18c59e * i
 ~~~~~
 
@@ -786,10 +801,11 @@ L3 = 0x0d038bf8d0bffbaf6c42bd6c965dca9029b291a33678c203c
 L4 = 0x31b073877a22d841081cbdc3714983d8212e5666b77e7fdc0
 ~~~~~
 
-b1 = [650487742939046294, -1397215820276968864, 
+~~~~~
+b1 = [650487742939046294, -1397215820276968864,
       523086274270593807,  -598824378691085905]
 
-b2 = [2110318963211420372, -1, 
+b2 = [2110318963211420372, -1,
       1, 2727991412926801872]
 
 b3 = [ 1705647224544756482, 199320682881407569,
@@ -797,10 +813,7 @@ b3 = [ 1705647224544756482, 199320682881407569,
 
 b4 = [ 1400113754146392127, 3540637644719456050,
       -471270406870313397, -1789345740969872106]
-
-Gx = 0x1E1F553F2878AA9C96869FB360AC77F6\*i + 0x1A3472237C2FB305286592AD7B3833AA
-
-Gy = 0x6E1C4AF8630E024249A7C344844C8B5C\*i + 0x0E3FEE9BA120785AB924A2462BCBB287
+~~~~~
 
 # Inversion and Square roots
 
@@ -812,7 +825,7 @@ adaptation of Algorithm 8 from {{SQRT}}. Note that (p-3)/4 is 2^125-1, and there
 is a very short addition chain to compute this value.
 
 ~~~~~
-InvSqrt(a+b*i):
+InvSqrt(a + b*i):
     if b = 0:
         t = a^((p-3)/4)     # 1 / sqrt(a)
         if a * t^2 = 1:
@@ -826,13 +839,13 @@ InvSqrt(a+b*i):
         if c * s != 1:
             return FAILURE
 
-        f = (a+c)/2
+        f = (a + c)/2
         g = (f)^((p-3)/4)  # 1 / sqrt(f)
         h = f * g          # sqrt(f)
         if h * g = -1:
             f = (a-c)/2
             g = (f)^((p-3)/4)
-            h = f * g 
+            h = f * g
 
         x0 = h * s
         x1 = - (s * b * g) / 2
