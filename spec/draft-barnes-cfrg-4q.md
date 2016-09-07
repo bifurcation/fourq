@@ -349,7 +349,7 @@ techniques were discussed in {{TwistedRevisited}} to accelerate repeated
 additions of the same point. Converting between these representations is
 straightforward.
 
-* R1: (X, Y, Z, Ta, Tb), Ta * Tb = T
+* R1: (X, Y, Z, Ta, Tb), Ta * Tb = T, Z * T = X * Y
 * R2: (N, D, E, F) = (X + Y, Y - X, 2 * Z, 2 * d * T)
 * R3: (N, D, Z, T) = (X + Y, Y - X, Z, T)
 * R4: (X, Y, Z)
@@ -670,7 +670,7 @@ DH(m, P):
       If Q is the neutral point, return FAILURE
 
       Compute [m]*Q
-Return the Y coordinate of [m]*Q
+Return [m]*Q in affine coordinates
 ~~~~
 
 The role of the separate multiplication by 392 is to ensure that Q is an
@@ -689,6 +689,10 @@ Gy = 0x0E3FEE9BA120785AB924A2462BCBB287 +
      0x6E1C4AF8630E024249A7C344844C8B5C\*i
 G = (X, Y)
 ~~~~
+
+The tables used in multiplications of this generator (small multiples of G for
+windowed multiply, endomorphism images for the optimized multiply) can be
+pre-generated to speed up the first, fixed-point DH computation.
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared
 key: each picks a random string of 32 bytes, mA and mB, respectively. Alice
