@@ -562,8 +562,8 @@ which are used to implement rounding.  All these values are listed in
 {{constants}}.  In addition, we use two constant vectors derived from these
 inputs:
 
-* c  = 2 b1 - b2 + 5 b3 + 2 b4
-* c' = 2 b1 - b2 + 5 b3 + b4
+* c  = 5 * b2 - 3 * b3 + 2 * b4
+* c' = 5 * b2 - 3 * b3 + 3 * b4 = c + b4
 
 Given m, first compute t[i] = floor(L[i] * m / 2^256) for i between 1 and 4.
 Then compute the vector sum a = (m, 0, 0, 0) - t1 b1 - t2 b2 - t3 b3 - t4 b4.
@@ -802,17 +802,14 @@ L4 = 0x31b073877a22d841081cbdc3714983d8212e5666b77e7fdc0
 ~~~~~
 
 ~~~~~
-b1 = [650487742939046294, -1397215820276968864,
-      523086274270593807,  -598824378691085905]
-
-b2 = [2110318963211420372, -1,
-      1, 2727991412926801872]
-
-b3 = [ 1705647224544756482, 199320682881407569,
-      -3336360048424633503, 765171327772315031]
-
-b4 = [ 1400113754146392127, 3540637644719456050,
-      -471270406870313397, -1789345740969872106]
+b1 = [ 0x0906ff27e0a0a196, -0x1363e862c22a2da0,
+       0x07426031ecc8030f, -0x084f739986b9e651]
+b2 = [ 0x1d495bea84fcc2d4, -0x0000000000000001,
+       0x0000000000000001,  0x25dbc5bc8dd167d0]
+b3 = [ 0x17abad1d231f0302,  0x02c4211ae388da51,
+      -0x2e4d21c98927c49f,  0x0a9e6f44c02ecd97]
+b4 = [ 0x136e340a9108c83f,  0x3122df2dc3e0ff32,
+      -0x068a49f02aa8a9b5, -0x18d5087896de0aea]
 ~~~~~
 
 # Inversion and Square roots
