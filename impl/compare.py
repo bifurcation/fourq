@@ -56,6 +56,12 @@ def compare_ops():
     k = '77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a'.decode('hex')
     u = '0900000000000000000000000000000000000000000000000000000000000000'.decode('hex')
 
+    G392 = curve4q.MUL_endo(392, G)
+    T_windowed = curve4q.table_windowed(G)
+    T_endo = curve4q.table_endo(G)
+    T392_windowed = curve4q.table_windowed(G392)
+    T392_endo = curve4q.table_endo(G392)
+
     # R1toR2
     GFp2.ctr_reset()
     Q = curve4q.R1toR2(G)
@@ -96,6 +102,11 @@ def compare_ops():
     Q = curve4q.MUL_windowed(m, G)
     opcounts["MUL_windowed"] = GFp2.ctr()
 
+    # MUL_windowed_fixed
+    GFp2.ctr_reset()
+    Q = curve4q.MUL_windowed(m, G, table=T_windowed)
+    opcounts["MUL_windowed_fixed"] = GFp2.ctr()
+
     # Phi
     GFp2.ctr_reset()
     phiP = curve4q.phi(G)
@@ -111,15 +122,30 @@ def compare_ops():
     mP = curve4q.MUL_endo(m, G)
     opcounts["MUL_endo"] = GFp2.ctr()
 
+    # MUL_endo_fixed
+    GFp2.ctr_reset()
+    Q = curve4q.MUL_endo(m, G, table=T_endo)
+    opcounts["MUL_endo_fixed"] = GFp2.ctr()
+
     # DH_windowed
     GFp2.ctr_reset()
     mP = curve4q.DH_windowed(m, G[:2])
     opcounts["DH_windowed"] = GFp2.ctr()
 
+    # DH_windowed_fixed
+    GFp2.ctr_reset()
+    mP = curve4q.DH_windowed(m, G[:2], table=T392_windowed)
+    opcounts["DH_windowed_fixed"] = GFp2.ctr()
+
     # DH_endo
     GFp2.ctr_reset()
     mP = curve4q.DH_endo(m, G[:2])
     opcounts["DH_endo"] = GFp2.ctr()
+
+    # DH_endo_fixed
+    GFp2.ctr_reset()
+    mP = curve4q.DH_endo(m, G[:2], table=T392_endo)
+    opcounts["DH_endo_fixed"] = GFp2.ctr()
 
     # x25519
     GFp25519.ctr_reset()
@@ -127,27 +153,36 @@ def compare_ops():
     opcounts["x25519"] = GFp25519.ctr()
 
     rows = ["R1toR2", "R1toR3", "R2toR4", "ADD_core", "ADD", "DBL",
-            "phi", "psi", "psiphi", "MUL_windowed", "MUL_endo", "DH_windowed", "DH_endo", "x25519"]
+            "phi", "psi", "psiphi",
+            "MUL_windowed", "MUL_windowed_fixed", "MUL_endo", "MUL_endo_fixed",
+            "DH_windowed", "DH_windowed_fixed", "DH_endo", "DH_endo_fixed",
+            "x25519"]
 
     print "===== Field operation count ====="
     print
-    print "{:10s} {:>7s} {:>7s} {:>7s} {:>7s}".format("", "M", "S", "A", "I")
+    print "{:18s} {:>7s} {:>7s} {:>7s} {:>7s}".format("", "M", "S", "A", "I")
     for name in rows:
         if name not in opcounts:
             continue
         opctr = opcounts[name]
-        print "{:12s} {:7.1f} {:7.1f} {:7.1f} {:7.1f}".format(name, opctr[2], opctr[1], opctr[0], opctr[3])
+        print "{:20s} {:7.1f} {:7.1f} {:7.1f} {:7.1f}".format(name, opctr[2], opctr[1], opctr[0], opctr[3])
     print
 
 def compare_time():
     G = (curve4q.Gx, curve4q.Gy)
     u = '09'.ljust(64, '0').decode('hex')
 
+    G392 = curve4q.MUL_endo(392, curve4q.AffineToR1(curve4q.Gx, curve4q.Gy))
+    T392_windowed = curve4q.table_windowed(G392)
+    T392_endo = curve4q.table_endo(G392)
+
     coeff4q = [getrandbits(256) for i in range(DH_TEST_LOOPS)]
     coeff25519 = ["{:x}".format(m).ljust(64, '0').decode('hex') for m in coeff4q]
 
     time4q_windowed = 0
+    time4q_windowed_fixed = 0
     time4q_endo = 0
+    time4q_endo_fixed = 0
     time25519 = 0
     for i in range(len(coeff4q)):
         tic = time()
@@ -156,9 +191,19 @@ def compare_time():
         time4q_windowed += toc - tic
 
         tic = time()
+        mP = curve4q.DH_windowed(coeff4q[i], G, table=T392_windowed)
+        toc = time()
+        time4q_windowed_fixed += toc - tic
+
+        tic = time()
         mP = curve4q.DH_endo(coeff4q[i], G)
         toc = time()
         time4q_endo += toc - tic
+
+        tic = time()
+        mP = curve4q.DH_endo(coeff4q[i], G, table=T392_endo)
+        toc = time()
+        time4q_endo_fixed += toc - tic
 
         tic = time()
         ku = curve25519.x25519(coeff25519[i], u)
@@ -167,9 +212,11 @@ def compare_time():
 
     print "===== Time for {} field operations =====".format(DH_TEST_LOOPS)
     print
-    print "{:<25s} {:>7.2f}ms".format("Curve4Q (windowed)", 1000 * time4q_windowed)
-    print "{:<25s} {:>7.2f}ms".format("Curve4Q (endomorphisms)", 1000 * time4q_endo)
-    print "{:<25s} {:>7.2f}ms".format("Curve25519", 1000 * time25519)
+    print "{:<28s} {:>7.2f}ms".format("Curve4Q (windowed)", 1000 * time4q_windowed)
+    print "{:<28s} {:>7.2f}ms".format("Curve4Q (win fixed base)", 1000 * time4q_windowed_fixed)
+    print "{:<28s} {:>7.2f}ms".format("Curve4Q (endomorphisms)", 1000 * time4q_endo)
+    print "{:<28s} {:>7.2f}ms".format("Curve4Q (endo fixed base)", 1000 * time4q_endo_fixed)
+    print "{:<28s} {:>7.2f}ms".format("Curve25519", 1000 * time25519)
 
 if __name__ == "__main__":
     compare_fields()

@@ -43,17 +43,16 @@ def encode(X, Y):
 # NB: Not constant-time
 def decode(B):
     if len(B) != 32:
-        print len(B)
-        raise "Malformed point: length {} != 32".format(len(B))
+        raise Exception("Malformed point: length {} != 32".format(len(B)))
     if B[15] & 0x80 != 0x00:
-        raise "Malformed point: reserved bit is not zero"
+        raise Exception("Malformed point: reserved bit is not zero")
 
     s = B[31] >> 7
     y0 = GFp.fromLittleEndian(B[:16])
     y1 = GFp.fromLittleEndian(B[16:])
 
     if y0 >= p1271 or y1 >= p1271:
-        raise "Malformed point: reserved bit is not zero"
+        raise Exception("Malformed point: reserved bit is not zero")
 
     y = (y0, y1)
     y2 = GFp2.sqr(y)
@@ -66,6 +65,9 @@ def decode(B):
     x = min(xp, xm)
     if s == 1:
         x = max(xp, xm)
+
+    if not PointOnCurve((x, y)):
+        raise Exception("Malformed point: not on curve")
 
     return (x, y)
 
@@ -150,8 +152,16 @@ def ADD(P, Q):
 
 ########## Multiplication without Endomorphisms ##########
 
+def table_windowed(P):
+    Q = DBL(P)
+    T = range(8)
+    T[0] = R1toR2(P)
+    for i in range(1, 8):
+        T[i] = R1toR2(ADD(Q, T[i-1]))
+    return T
+
 # R1 -> R1
-def MUL_windowed(m, P):
+def MUL_windowed(m, P, table=None):
     # Check that P is in R1
     (X, Y, Z, Ta, Tb) = P
 
@@ -172,11 +182,10 @@ def MUL_windowed(m, P):
         )
 
     # Pre-compute [1]P, [3]P, ..., [15]P and negatives
-    Q = DBL(P)
-    T = range(8)
-    T[0] = R1toR2(P)
-    for i in range(1, 8):
-        T[i] = R1toR2(ADD(Q, T[i-1]))
+    # XXX: Should check whether this table is for this point
+    T = table
+    if not T:
+        T = table_windowed(P)
     nT = [R2neg(P) for P in T]
 
     # Pre-compute scalars
@@ -349,7 +358,27 @@ def recode(v):
 
 ########## Optimized multiplication ##########
 
-def MUL_endo(m, P):
+def table_endo(P):
+    Q = phi(P)
+    R = psi(P)
+    S = psi(Q)
+
+    Q = R1toR3(Q)
+    R = R1toR3(R)
+    S = R1toR3(S)
+
+    T = range(8)
+    T[0] = R1toR2(P)                 # P
+    T[1] = R1toR2(ADD_core(Q, T[0])) # P + Q
+    T[2] = R1toR2(ADD_core(R, T[0])) # P + R
+    T[3] = R1toR2(ADD_core(R, T[1])) # P + Q + R
+    T[4] = R1toR2(ADD_core(S, T[0])) # P + S
+    T[5] = R1toR2(ADD_core(S, T[1])) # P + Q + S
+    T[6] = R1toR2(ADD_core(S, T[2])) # P + R + S
+    T[7] = R1toR2(ADD_core(S, T[3])) # P + Q + R + S
+    return T
+
+def MUL_endo(m, P, table=None):
     # Check that P is in R1
     (X, Y, Z, Ta, Tb) = P
 
@@ -370,22 +399,10 @@ def MUL_endo(m, P):
         )
 
     # Compute endomorphism images and negatives
-    Q = phi(P)
-    R = psi(P)
-    S = psi(Q)
-
-    Q = R1toR3(Q)
-    R = R1toR3(R)
-    S = R1toR3(S)
-    T = range(8)
-    T[0] = R1toR2(P)                 # P
-    T[1] = R1toR2(ADD_core(Q, T[0])) # P + Q
-    T[2] = R1toR2(ADD_core(R, T[0])) # P + R
-    T[3] = R1toR2(ADD_core(R, T[1])) # P + Q + R
-    T[4] = R1toR2(ADD_core(S, T[0])) # P + S
-    T[5] = R1toR2(ADD_core(S, T[1])) # P + Q + S
-    T[6] = R1toR2(ADD_core(S, T[2])) # P + R + S
-    T[7] = R1toR2(ADD_core(S, T[3])) # P + Q + R + S
+    # XXX: Should check whether this table is for this point
+    T = table
+    if not T:
+        T = table_endo(P)
     nT = [R2neg(P) for P in T]
 
     # Compute the scalar decomposition and recoding
@@ -402,7 +419,7 @@ def MUL_endo(m, P):
 
 ########## Diffie-Hellman ##########
 
-def DH_core(m, P, mul):
+def DH_core(m, P, mul, table=None):
     if not PointOnCurve(P):
         raise Exception("Point not on curve")
 
@@ -412,18 +429,18 @@ def DH_core(m, P, mul):
     P3 = DBL(P2)
     Q = ADD(P1, R1toR2(P2))
     Q = ADD(Q, R1toR2(P3))
-    Q = R1toAffine(mul(m, Q))
+    Q = R1toAffine(mul(m, Q, table=table))
 
     if Q == (Ox, Oy):
         raise Exception("DH computation resulted in neutral point")
 
     return Q
 
-def DH_windowed(m, P):
-    return DH_core(m, P, MUL_windowed)
+def DH_windowed(m, P, table=None):
+    return DH_core(m, P, MUL_windowed, table=table)
 
-def DH_endo(m, P):
-    return DH_core(m, P, MUL_endo)
+def DH_endo(m, P, table=None):
+    return DH_core(m, P, MUL_endo, table=table)
 
 ########## Self test for correctness ##########
 ########## (cases are from FourQlib) ##########
@@ -530,7 +547,26 @@ def test_mul_windowed():
     test.testpt("mul-windowed-*2", B2, A2)
 
     # Test multiply over several iterations
-    test_mul("mul-windowed", MUL_windowed)
+    #XXX test_mul("mul-windowed", MUL_windowed)
+
+    # Test fixed-based multiply
+    T = table_windowed(A)
+    B = MUL_windowed(1, A, table=T)
+    B2 = MUL_windowed(2, A, table=T)
+    test.testpt("mul-windowed-fixed-*1", B, A)
+    test.testpt("mul-windowed-fixed-*2", B2, A2)
+
+    failed = 0
+    for i in range(10):
+        m = getrandbits(256)
+        B1 = MUL_windowed(m, A, table=T)
+        B2 = MUL_windowed(m, A)
+        if B1 != B2:
+            failed += 1
+    if failed == 0:
+        print "[PASS] mul-windowed-fixed-rand"
+    else:
+        print "[FAIL] mul-windowed-fixed-rand"
 
 def test_endo():
     TEST_LOOPS = 1000
@@ -617,7 +653,26 @@ def test_mul_endo():
     test.testpt("mul-endo-*2", B2, A2)
 
     # Test multiply over several iterations
-    test_mul("mul-endo", MUL_endo)
+    #XXX test_mul("mul-endo", MUL_endo)
+
+    # Test fixed-based multiply
+    T = table_endo(A)
+    B = MUL_endo(1, A, table=T)
+    B2 = MUL_endo(2, A, table=T)
+    test.testpt("mul-endo-fixed-*1", B, A)
+    test.testpt("mul-endo-fixed-*2", B2, A2)
+
+    failed = 0
+    for i in range(10):
+        m = getrandbits(256)
+        B1 = MUL_endo(m, A, table=T)
+        B2 = MUL_endo(m, A)
+        if B1 != B2:
+            failed += 1
+    if failed == 0:
+        print "[PASS] mul-windowed-fixed-rand"
+    else:
+        print "[FAIL] mul-windowed-fixed-rand"
 
 def test_dh():
     TEST_LOOPS = 10
@@ -628,7 +683,7 @@ def test_dh():
         failed = 0
         for i in range(TEST_LOOPS):
             m = getrandbits(256)
-            Q1 = DH_windowed(m, P)
+            Q1 = dh(m, P)
             Q2 = R1toAffine(MUL_windowed(392 * m, AffineToR1(P[0], P[1])))
             if Q1 != Q2:
                 failed += 1
@@ -644,17 +699,38 @@ def test_dh():
         for i in range(TEST_LOOPS):
             a = getrandbits(256)
             b = getrandbits(256)
-            abG = DH_windowed(a, DH_windowed(b, G))
-            baG = DH_windowed(b, DH_windowed(a, G))
+            abG = dh(a, dh(b, G))
+            baG = dh(b, dh(a, G))
             if abG != baG:
                 failed += 1
         if failed == 0:
             print "[PASS] DH-{}-symm".format(label)
         else:
-            print "[FAIL] DH-{}-symm".format(label)
+            print "[FAIL] DH-{}-symm {}".format(label, failed)
 
     dhtest("windowed", DH_windowed)
     dhtest("endo", DH_endo)
+
+    def dhtest_fixed_base(label, dh, P, table):
+        failed = 0
+        A = AffineToR1(P[0], P[1])
+        for i in range(TEST_LOOPS):
+            m = getrandbits(256)
+            Q1 = dh(m, P, table=table)
+            Q2 = dh(m, P)
+            if Q1 != Q2:
+                failed += 1
+        if failed == 0:
+            print "[PASS] DH-{}-fixed".format(label)
+        else:
+            print "[FAIL] DH-{}-fixed {}".format(label, failed)
+
+    G = (Gx, Gy)
+    G392 = MUL_endo(392, AffineToR1(Gx, Gy))
+    T_windowed = table_windowed(G392)
+    T_endo = table_endo(G392)
+    dhtest_fixed_base("windowed", DH_windowed, G, T_windowed)
+    dhtest_fixed_base("endo", DH_endo, G, T_endo)
 
     # Test that points not on the curve are rejected
     try:
@@ -664,7 +740,7 @@ def test_dh():
         print "[PASS] DH-reject-not-on-curve"
 
     # Test that 392-torsion points are rejected
-    P392 = ((0x1318020702de23bc3c9b73c751b4b192, 0x77ab39a7d8990c0a18e3c409fbd81a95), 
+    P392 = ((0x1318020702de23bc3c9b73c751b4b192, 0x77ab39a7d8990c0a18e3c409fbd81a95),
             (0x515854b6d19cc2da1ea2b43b5121a22e, 0x763f89e129497361d74dff5063e66682))
     try:
         DH_endo(1, P392)
