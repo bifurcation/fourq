@@ -637,7 +637,7 @@ def test_dh():
             print "[PASS] DH-{}-392".format(label)
         else:
             print "[FAIL] DH-{}-392".format(label)
-        
+
         # Test that DH has the symmetry property
         G = (Gx, Gy)
         failed = 0
