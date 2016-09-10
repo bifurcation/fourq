@@ -6,8 +6,7 @@ from fields import GFp, GFp2, p1271
 ########## Definitions ##########
 
 # Curve parameter as a field element tuple and its double
-d = (0xe40000000000000142L, 0x5e472f846657e0fcb3821488f1fc0c8dL)
-twod = GFp2.mul(GFp2.two, d)
+d = (0xe40000000000000142, 0x5e472f846657e0fcb3821488f1fc0c8d)
 
 # Order of the curve group
 N = 0x29cbc14e5e0a72f05397829cbc14e5dfbd004dfe0f79992fb2540ec7768ce7
@@ -48,6 +47,8 @@ def decode(B):
         raise Exception("Malformed point: reserved bit is not zero")
 
     s = B[31] >> 7
+    B[31] &= 0x7F
+
     y0 = GFp.fromLittleEndian(B[:16])
     y1 = GFp.fromLittleEndian(B[16:])
 
@@ -88,7 +89,7 @@ def R1toR2(P):
         GFp2.add(X, Y),
         GFp2.sub(Y, X),
         GFp2.add(Z, Z),
-        GFp2.mul(twod, GFp2.mul(Ta, Tb))
+        GFp2.mul(GFp2.mul(GFp2.two, d), GFp2.mul(Ta, Tb))
     )
 
 # R1toR3(X, Y, Z, Ta, Tb) = (X+Y, Y-X, Z, Ta*Tb)
@@ -531,7 +532,7 @@ def test_mul(label, mul):
 
     A = AffineToR1(Gx, Gy)
     for i in range(TEST_LOOPS):
-        A = MUL_windowed(coeff[i], A)
+        A = mul(coeff[i], A)
 
     mulP = ((0x257C122BBFC94A1BDFD2B477BD494BEF, 0x469BF80CB5B11F01769593547237C459),
             (0x0901B3817C0E936C281C5067996F3344, 0x570B948EACACE2104FE8C429915F1245))
@@ -547,7 +548,7 @@ def test_mul_windowed():
     test.testpt("mul-windowed-*2", B2, A2)
 
     # Test multiply over several iterations
-    #XXX test_mul("mul-windowed", MUL_windowed)
+    test_mul("mul-windowed", MUL_windowed)
 
     # Test fixed-based multiply
     T = table_windowed(A)
@@ -653,7 +654,7 @@ def test_mul_endo():
     test.testpt("mul-endo-*2", B2, A2)
 
     # Test multiply over several iterations
-    #XXX test_mul("mul-endo", MUL_endo)
+    test_mul("mul-endo", MUL_endo)
 
     # Test fixed-based multiply
     T = table_endo(A)

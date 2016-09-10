@@ -202,7 +202,7 @@ class GFp2:
     def invsqrt(a):
         if a[1] == 0:
             t = GFp.invsqrt(a[0])
-            if GFp.mul(a, GFp.sqr(t)) == 1:
+            if GFp.mul(a[0], GFp.sqr(t)) == 1:
                 return (t, 0)
             else:
                 return (0, t)
@@ -221,6 +221,7 @@ class GFp2:
         h = GFp.mul(delta, g)
         if GFp.mul(h, g) == -1:
             delta = GFp.mul(GFp.sub(a[0], c), GFp.half)
+            g = GFp.invsqrt(delta)
             h = GFp.mul(delta, g)
 
         x0 = GFp.mul(h, s)
