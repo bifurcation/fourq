@@ -663,15 +663,15 @@ return Q = (X/Z, Y/Z)
 DH(m, P):
       Ensure P on curve and if not return FAILURE
 
-      P1 = DBL(P)
-      P2 = ADD(P1, P)
-      P3 = DBL(DBL(DBL(DBL(P2))))
-      Q = ADD(P3, P)
-      Q = (DBL(DBL(DBL(Q)))  # Q = [392]P
-
-      If Q is the neutral point, return FAILURE
+      P1 = DBL(P)                 # [2]P
+      P2 = ADD(P1, P)             # [3]P
+      P3 = DBL(DBL(DBL(DBL(P2)))) # [48]P
+      Q = ADD(P3, P)              # [49]P
+      Q = DBL(DBL(DBL(Q))         # [392]P
 
       Compute [m]*Q
+
+      If Q is the neutral point, return FAILURE
 Return [m]*Q in affine coordinates
 </pre>
 <p id="rfc.section.5.p.2">The role of the separate multiplication by 392 is to ensure that Q is an N-torsion point so that the scalar multiplication algorithms above may be used safely to produce correct results.  In other words, as the cofactor is greater than one, Diffie-Hellman computations using Curve4Q MUST always use cofactor clearing (as defined above).</p>
@@ -830,38 +830,51 @@ b4 = [ 0x136e340a9108c83f,  0x3122df2dc3e0ff32,
 <h1 id="rfc.appendix.B"><a href="#rfc.appendix.B">Appendix B.</a> <a href="#point-decompression" id="point-decompression">Point Decompression</a></h1>
 <p id="rfc.section.B.p.1">The following algorithm is an adaptation of the decompression algorithm from <a href="#SchnorrQ">[SchnorrQ]</a>. It decodes a 32-byte string B which is formatted as detailed in <a href="#representation-of-curve-points">Section 3</a>. The result is a valid point P = (x, y) that satisfies the curve equation, or a message of FAILED if the decoding had a failure.</p>
 <pre>
+Sign(x0 + x1*i):
+    s0 = X[0] &gt;&gt; 126
+    s1 = X[1] &gt;&gt; 126
+    if X[0] != 0:
+        return s0
+    else:
+        return s1
+
+Compress(X, Y):
+    B = Y encoded following {{representation-of-curve-points}}
+    Set the to bit to Sign(X)
+    return B
+
 Expand(B = [y, s]):
-    Parse out the encoded values y = y0 + y1 * i and s according to {{representation-of-curve-points}}
+    Parse out the encoded values y = y0 + y1 * i and s
     if y0 or y1 &gt;= p:
         return FAILED
+
     u = y^2 - 1             # Set u = u0 + u1 * i
     v = d*y^2 + 1           # Set v = v0 + v1 * i
+
     t0 = u0*v0 + u1*v1;
     t1 = u1*v0 - u0*v1;
     t2 = v0^2 + v1^2
     t3 = (t0^2 + t1^2)^(2^125)
+
     t = 2*(t0 + t3)
     if t = 0:
         t = 2*(t0 - t3)
-    r = (t * t2^3)^(2^125-1)
-    s = (r * t2) * t
-    x0 = s/2             
-    x1 = (r * t2) * t1      # Set x = x0 + x1 * i
-    if t2 * s^2 = t: 
+
+    a = (t * t2^3)^(2^125-1)
+    b = (a * t2) * t
+    x0 = b/2
+    x1 = (a * t2) * t1
+    if t2 * b^2 = t:
         Swap x0 and x1
-    larger = -x             # Set -x = -x0 - x1 * i             
-    smaller = x
-    if (x0 &gt; -x0) or (x0 = -x0 and x1 &gt; -x1):
-        larger = x
-        smaller = -x
-    if s = 0:
-        x = smaller
-    else
-        x = larger
-    if -x^2+y^2 != 1+d*x^2*y^2:
+
+    x = x0 + x1 * i
+    if Sign(x) != s:
+      x = -x
+
+    if -x^2+y^2 != 1+d*x^2*y^2:  # Check curve equation with x
         x = conj(x)
-    if -x^2+y^2 != 1+d*x^2*y^2:     # Check curve equation
-        return FAILED    
+    if -x^2+y^2 != 1+d*x^2*y^2:  # ... or its conjugate
+        return FAILED
     return P = (x,y)
 </pre>
 <h1 id="rfc.authors">

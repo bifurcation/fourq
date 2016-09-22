@@ -82,7 +82,7 @@ Table of Contents
    8.  Informative References  . . . . . . . . . . . . . . . . . . .  15
    Appendix A.  Constants  . . . . . . . . . . . . . . . . . . . . .  16
    Appendix B.  Point Decompression  . . . . . . . . . . . . . . . .  18
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  18
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  20
 
 1.  Introduction
 
@@ -691,15 +691,15 @@ Internet-Draft                   Curve4Q                  September 2016
    DH(m, P):
          Ensure P on curve and if not return FAILURE
 
-         P1 = DBL(P)
-         P2 = ADD(P1, P)
-         P3 = DBL(DBL(DBL(DBL(P2))))
-         Q = ADD(P3, P)
-         Q = (DBL(DBL(DBL(Q)))  # Q = [392]P
-
-         If Q is the neutral point, return FAILURE
+         P1 = DBL(P)                 # [2]P
+         P2 = ADD(P1, P)             # [3]P
+         P3 = DBL(DBL(DBL(DBL(P2)))) # [48]P
+         Q = ADD(P3, P)              # [49]P
+         Q = DBL(DBL(DBL(Q))         # [392]P
 
          Compute [m]*Q
+
+         If Q is the neutral point, return FAILURE
    Return [m]*Q in affine coordinates
 
    The role of the separate multiplication by 392 is to ensure that Q is
@@ -962,39 +962,109 @@ Appendix B.  Point Decompression
    (x, y) that satisfies the curve equation, or a message of FAILED if
    the decoding had a failure.
 
-Expand(B = [y, s]):
-    Parse out the encoded values y = y0 + y1 * i and s according to {{representation-of-curve-points}}
-    if y0 or y1 >= p:
-        return FAILED
-    u = y^2 - 1             # Set u = u0 + u1 * i
-    v = d*y^2 + 1           # Set v = v0 + v1 * i
-    t0 = u0*v0 + u1*v1;
-    t1 = u1*v0 - u0*v1;
-    t2 = v0^2 + v1^2
-    t3 = (t0^2 + t1^2)^(2^125)
-    t = 2*(t0 + t3)
-    if t = 0:
-        t = 2*(t0 - t3)
-    r = (t * t2^3)^(2^125-1)
-    s = (r * t2) * t
-    x0 = s/2
-    x1 = (r * t2) * t1      # Set x = x0 + x1 * i
-    if t2 * s^2 = t:
-        Swap x0 and x1
-    larger = -x             # Set -x = -x0 - x1 * i
-    smaller = x
-    if (x0 > -x0) or (x0 = -x0 and x1 > -x1):
-        larger = x
-        smaller = -x
-    if s = 0:
-        x = smaller
-    else
-        x = larger
-    if -x^2+y^2 != 1+d*x^2*y^2:
-        x = conj(x)
-    if -x^2+y^2 != 1+d*x^2*y^2:     # Check curve equation
-        return FAILED
-    return P = (x,y)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ladd, et al.             Expires March 26, 2017                [Page 18]
+
+Internet-Draft                   Curve4Q                  September 2016
+
+
+   Sign(x0 + x1*i):
+       s0 = X[0] >> 126
+       s1 = X[1] >> 126
+       if X[0] != 0:
+           return s0
+       else:
+           return s1
+
+   Compress(X, Y):
+       B = Y encoded following {{representation-of-curve-points}}
+       Set the to bit to Sign(X)
+       return B
+
+   Expand(B = [y, s]):
+       Parse out the encoded values y = y0 + y1 * i and s
+       if y0 or y1 >= p:
+           return FAILED
+
+       u = y^2 - 1             # Set u = u0 + u1 * i
+       v = d*y^2 + 1           # Set v = v0 + v1 * i
+
+       t0 = u0*v0 + u1*v1;
+       t1 = u1*v0 - u0*v1;
+       t2 = v0^2 + v1^2
+       t3 = (t0^2 + t1^2)^(2^125)
+
+       t = 2*(t0 + t3)
+       if t = 0:
+           t = 2*(t0 - t3)
+
+       a = (t * t2^3)^(2^125-1)
+       b = (a * t2) * t
+       x0 = b/2
+       x1 = (a * t2) * t1
+       if t2 * b^2 = t:
+           Swap x0 and x1
+
+       x = x0 + x1 * i
+       if Sign(x) != s:
+         x = -x
+
+       if -x^2+y^2 != 1+d*x^2*y^2:  # Check curve equation with x
+           x = conj(x)
+       if -x^2+y^2 != 1+d*x^2*y^2:  # ... or its conjugate
+           return FAILED
+       return P = (x,y)
+
+
+
+
+
+Ladd, et al.             Expires March 26, 2017                [Page 19]
+
+Internet-Draft                   Curve4Q                  September 2016
+
 
 Authors' Addresses
 
@@ -1002,12 +1072,6 @@ Authors' Addresses
    UC Berkeley
 
    Email: watsonbladd@gmail.com
-
-
-
-Ladd, et al.             Expires March 26, 2017                [Page 18]
-
-Internet-Draft                   Curve4Q                  September 2016
 
 
    Patrick Longa
@@ -1053,12 +1117,4 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-
-
-
-
-
-
-
-
-Ladd, et al.             Expires March 26, 2017                [Page 19]
+Ladd, et al.             Expires March 26, 2017                [Page 20]
