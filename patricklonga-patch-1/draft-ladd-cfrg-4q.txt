@@ -5,10 +5,10 @@
 Network Working Group                                            W. Ladd
 Internet-Draft                                               UC Berkeley
 Intended status: Standards Track                                P. Longa
-Expires: March 25, 2017                               Microsoft Research
+Expires: March 26, 2017                               Microsoft Research
                                                                R. Barnes
                                                                  Mozilla
-                                                      September 21, 2016
+                                                      September 22, 2016
 
 
                                 Curve4Q
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on March 25, 2017.
+   This Internet-Draft will expire on March 26, 2017.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 1]
+Ladd, et al.             Expires March 26, 2017                 [Page 1]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -81,7 +81,7 @@ Table of Contents
    7.  Security Considerations . . . . . . . . . . . . . . . . . . .  14
    8.  Informative References  . . . . . . . . . . . . . . . . . . .  15
    Appendix A.  Constants  . . . . . . . . . . . . . . . . . . . . .  16
-   Appendix B.  Inversion and Square roots . . . . . . . . . . . . .  18
+   Appendix B.  Point Decompression  . . . . . . . . . . . . . . . .  18
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  18
 
 1.  Introduction
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 2]
+Ladd, et al.             Expires March 26, 2017                 [Page 2]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -156,16 +156,16 @@ Internet-Draft                   Curve4Q                  September 2016
    1/A = conj(A) / (a0^2 + a1^2)
 
    The GF(p) division in the formula for 1/A can be computed using an
-   exponentiation via Fermat's little theorem, as discussed in
-   Appendix B.
+   exponentiation via Fermat's little theorem: 1/a = a^(p - 2) =
+   a^(2^127 - 3) for any element a of GF(p).  One can use a fixed
+   addition chain to compute a^(2^127 - 3) (e.g., see [FourQlib]).
 
    Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
    following curve equation:
 
 
 
-
-Ladd, et al.             Expires March 25, 2017                 [Page 3]
+Ladd, et al.             Expires March 26, 2017                 [Page 3]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -221,22 +221,23 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 4]
+Ladd, et al.             Expires March 26, 2017                 [Page 4]
 
 Internet-Draft                   Curve4Q                  September 2016
 
 
    with a modified top bit.  This top bit is used to disambiguate
-   between x and -x.
+   between x and -x during decoding.
 
-   To carry out this disambiguation we order the elements of GF(p^2) as
-   follows: to compare x = x0 + x1*i with y = y0 + y1*i assuming all
-   coordinates are in [0, p) we compare x0 with y0, and, if they are
-   equal, compare x1 with y1.  This is the lexicographic ordering on
-   (x0, x1) where each value is in the range [0, p).
+   To carry out this disambiguation we use the lexicographic order of
+   elements in GF(p^2): define two elements a = a0 + a1*i and b = b0 +
+   b1*i with all their coordinates in [0, p); a is greater than b if a0
+   is greater than b0.  If a0 and b0 are equal, a is greater than b if
+   a1 is greater than b1.
 
-   The high bit of a compressed point is 0 if the smaller possible x
-   value is correct, and 1 if the larger possible x value is correct.
+   Set the coordinate value x and its negative -x.  The top bit of a
+   compressed point is 0 if x is smaller than -x.  Otherwise, the top
+   bit is 1.
 
    |--------------- y ---------------|
    |       y0     |0|       y1     |s|
@@ -244,29 +245,26 @@ Internet-Draft                   Curve4Q                  September 2016
 
    To decode an encoded point from a 32-byte sequence B:
 
-   o  Check that the high-order bit of B[15] is zero
-
    o  Parse out the encoded values y = y0 + y1 * i and s
 
    o  Check that y0 and y1 are both less than p
 
-   o  Compute x = (y^2 - 1) * InvSqrt((y^2 - 1) * (d * y^2 - 1)), where
-      InvSqrt(z)=1/sqrt(z) (see Appendix B)
-
-   o  If the computation of x failed, decoding fails
+   o  Solve x^2 = (y^2 - 1) * (d * y^2 + 1) for x
 
    o  If s is 0, return the smaller of x and -x (in the lexicographic
       ordering)
 
    o  If s is 1, return the larger of x and -x
 
-   This point compression format is from [SchnorrQ], and the similar
-   decompression algorithm there may be used instead to recover the x
-   coordinate.  We call the operation of compressing a point P into 32
-   bytes Compress(P), and decompression Expand(S).
-   Expand(Compress(P))=P for all the points P on the curve, and
-   Compress(Expand(S))=S if and only if S is a valid representation of a
-   point.
+   o  Check that (x,y) is a valid point on the curve
+
+   The appendix Appendix B details an algorithm for decoding a point
+   following the steps above.
+
+   We call the operation of compressing a point P into 32 bytes
+   Compress(P), and decompression Expand(S).  Expand(Compress(P))=P for
+   all the points P on the curve, and Compress(Expand(S))=S if and only
+   if S is a valid representation of a point.
 
    Not all 32 byte strings represent valid points.  Implementations MUST
    reject invalid strings and check that decompression is successful.
@@ -277,7 +275,9 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 5]
+
+
+Ladd, et al.             Expires March 26, 2017                 [Page 5]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -333,7 +333,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 6]
+Ladd, et al.             Expires March 26, 2017                 [Page 6]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -389,7 +389,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 7]
+Ladd, et al.             Expires March 26, 2017                 [Page 7]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -445,7 +445,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 8]
+Ladd, et al.             Expires March 26, 2017                 [Page 8]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -501,7 +501,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                 [Page 9]
+Ladd, et al.             Expires March 26, 2017                 [Page 9]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -557,7 +557,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 10]
+Ladd, et al.             Expires March 26, 2017                [Page 10]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -613,7 +613,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 11]
+Ladd, et al.             Expires March 26, 2017                [Page 11]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -669,7 +669,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 12]
+Ladd, et al.             Expires March 26, 2017                [Page 12]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -725,7 +725,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 13]
+Ladd, et al.             Expires March 26, 2017                [Page 13]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -781,7 +781,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 14]
+Ladd, et al.             Expires March 26, 2017                [Page 14]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -837,7 +837,7 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 15]
+Ladd, et al.             Expires March 26, 2017                [Page 15]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -861,10 +861,6 @@ Internet-Draft                   Curve4Q                  September 2016
               Costello, C. and P. Longa, "SchnorrQ: Schnorr Signatures
               on FourQ", 2016, <https://www.microsoft.com/en-
               us/research/wp-content/uploads/2016/07/SchnorrQ.pdf>.
-
-   [SQRT]     Adj, G. and F. Rodriguez-Henriquez, "Square Root
-              Computation over Even Extension Fields", 2012,
-              <https://eprint.iacr.org/2012/685.pdf>.
 
    [Twisted]  Bernstein, D., Birkner, P., Joye, M., Lange, T., and C.
               Peters, "Twisted Edwards Curves", 2008,
@@ -893,7 +889,11 @@ Appendix A.  Constants
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 16]
+
+
+
+
+Ladd, et al.             Expires March 26, 2017                [Page 16]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -949,47 +949,52 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 17]
+Ladd, et al.             Expires March 26, 2017                [Page 17]
 
 Internet-Draft                   Curve4Q                  September 2016
 
 
-Appendix B.  Inversion and Square roots
+Appendix B.  Point Decompression
 
-   Inversion of nonzero elements of GF(p) can be computed in constant-
-   time using one exponentiation via Fermat's Little Theorem: 1/a = a^(p
-   - 2) = a^(2^127 - 3).
+   The following algorithm is an adaptation of the decompression
+   algorithm from [SchnorrQ].  It decodes a 32-byte string B which is
+   formatted as detailed in Section 3.  The result is a valid point P =
+   (x, y) that satisfies the curve equation, or a message of FAILED if
+   the decoding had a failure.
 
-   The following algorithm for computing inverse square roots in GF(p^2)
-   is an adaptation of Algorithm 8 from [SQRT].  Note that (p-3)/4 is
-   2^125-1, and there is a very short addition chain to compute this
-   value.
-
-   InvSqrt(a + b*i):
-       if b = 0:
-           t = a^((p-3)/4)     # 1 / sqrt(a)
-           if a * t^2 = 1:
-               return t + 0*i
-           else:
-               return 0 + t*i
-       else:
-           n = a^2 + b^2
-           s = (n)^((p-3)/4)  # 1 / sqrt(n)
-           c = n * s          # sqrt(n)
-           if c * s != 1:
-               return FAILURE
-
-           f = (a + c)/2
-           g = (f)^((p-3)/4)  # 1 / sqrt(f)
-           h = f * g          # sqrt(f)
-           if h * g = -1:
-               f = (a-c)/2
-               g = (f)^((p-3)/4)
-               h = f * g
-
-           x0 = h * s
-           x1 = - (s * b * g) / 2
-           return x0 + x1*i
+Expand(B = [y, s]):
+    Parse out the encoded values y = y0 + y1 * i and s according to {{representation-of-curve-points}}
+    if y0 or y1 >= p:
+        return FAILED
+    u = y^2 - 1             # Set u = u0 + u1 * i
+    v = d*y^2 + 1           # Set v = v0 + v1 * i
+    t0 = u0*v0 + u1*v1;
+    t1 = u1*v0 - u0*v1;
+    t2 = v0^2 + v1^2
+    t3 = (t0^2 + t1^2)^(2^125)
+    t = 2*(t0 + t3)
+    if t = 0:
+        t = 2*(t0 - t3)
+    r = (t * t2^3)^(2^125-1)
+    s = (r * t2) * t
+    x0 = s/2
+    x1 = (r * t2) * t1      # Set x = x0 + x1 * i
+    if t2 * s^2 = t:
+        Swap x0 and x1
+    larger = -x             # Set -x = -x0 - x1 * i
+    smaller = x
+    if (x0 > -x0) or (x0 = -x0 and x1 > -x1):
+        larger = x
+        smaller = -x
+    if s = 0:
+        x = smaller
+    else
+        x = larger
+    if -x^2+y^2 != 1+d*x^2*y^2:
+        x = conj(x)
+    if -x^2+y^2 != 1+d*x^2*y^2:     # Check curve equation
+        return FAILED
+    return P = (x,y)
 
 Authors' Addresses
 
@@ -1000,12 +1005,7 @@ Authors' Addresses
 
 
 
-
-
-
-
-
-Ladd, et al.             Expires March 25, 2017                [Page 18]
+Ladd, et al.             Expires March 26, 2017                [Page 18]
 
 Internet-Draft                   Curve4Q                  September 2016
 
@@ -1061,4 +1061,4 @@ Internet-Draft                   Curve4Q                  September 2016
 
 
 
-Ladd, et al.             Expires March 25, 2017                [Page 19]
+Ladd, et al.             Expires March 26, 2017                [Page 19]
