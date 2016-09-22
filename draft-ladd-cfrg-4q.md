@@ -103,19 +103,9 @@ informative:
            -
              ins: M. Scott
 
-    SQRT:
-        target: "https://eprint.iacr.org/2012/685.pdf"
-        title: "Square Root Computation over Even Extension Fields"
-        date: 2012
-        author:
-           -
-              ins: G. Adj
-           -
-              ins: F. Rodriguez-Henriquez
-
     SchnorrQ:
        target: "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/SchnorrQ.pdf"
-       title: "SchnorrQ"
+       title: "SchnorrQ: Schnorr Signatures on FourQ"
        date: 2016
        author:
           -
@@ -159,8 +149,8 @@ This document specifies a twisted Edwards curve that takes advantage
 of arithmetic over the field GF(2^127-1) and two endomorphisms to achieve
 the speediest Diffie-Hellman key agreements over a group of order
 approximately 2^246, which provides around 128 bits of security.
-Curve4Q implementations are roughly twice as fast as those of Curve25519,
-and when not using endomorphisms take eighty percent of the time taken by Curve25519.
+Curve4Q implementations are more than two times faster than those of Curve25519
+and, when not using endomorphisms, are between 1.2 and 1.6 times faster.
 
 --- middle
 
@@ -225,8 +215,9 @@ conj(A) = a0 - a1*i
 1/A = conj(A) / (a0^2 + a1^2)
 ~~~~
 
-The GF(p) division in the formula for 1/A can be computed using exponentiation,
-as discussed in {{inversion-and-square-roots}}.
+The GF(p) division in the formula for 1/A can be computed using an exponentiation
+via Fermat's little theorem: 1/a = a^(p - 2) = a^(2^127 - 3) for any element a of GF(p).
+One can use a fixed addition chain to compute a^(2^127 - 3) (e.g., see {{FourQlib}}).
 
 Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
 following curve equation:
@@ -266,8 +257,8 @@ Diffie-Hellman problem involve solving the discrete logarithm problem. The best
 known algorithms take approximately 2^123 group operations.
 
 This group has two different efficiently computable endomorphisms, as described
-in {{Curve4Q}}. As discussed in {{GLV}} and {{GLS}} these endomorphisms
-multiplication by a large scalar to be computed using multiple multiplications
+in {{Curve4Q}}. As discussed in {{GLV}} and {{GLS}}, these endomorphisms
+allow a multiplication by a large scalar to be computed using multiple multiplications
 by smaller scalars, which can be evaluated in much less time overall.
 
 # Representation of Curve Points
@@ -280,15 +271,15 @@ in the range [0, 2^127-1), the top bit of b[15] is always zero.
 An element x0 + x1\*i of GF(p^2) is represented on the wire by the concatenation
 of the encodings for x0 and x1. A point (x, y) on Curve4Q is serialized in a
 compressed form as the representation of y with a modified top bit. This top bit
-is used to disambiguate between x and -x.
+is used to disambiguate between x and -x during decoding.
 
-To carry out this disambiguation we order the elements of GF(p^2) as follows: to
-compare x = x0 + x1\*i with y = y0 + y1\*i assuming all coordinates are in [0, p) we
-compare x0 with y0, and, if they are equal, compare x1 with y1. This is the
-lexicographic ordering on (x0, x1) where each value is in the range [0, p).
+To carry out this disambiguation we use the lexicographic order of elements
+in GF(p^2): define two elements a = a0 + a1\*i and b = b0 + b1\*i with all their
+coordinates in [0, p); a is greater than b if a0 is greater than b0. If a0 and
+b0 are equal, a is greater than b if a1 is greater than b1.
 
-The high bit of a compressed point is 0 if the smaller possible x value is
-correct, and 1 if the larger possible x value is correct.
+Set the coordinate value x and its negative -x. The top bit of a compressed
+point is 0 if x is smaller than -x. Otherwise, the top bit is 1.
 
 ~~~~~
 |--------------- y ---------------|
@@ -296,23 +287,21 @@ correct, and 1 if the larger possible x value is correct.
 |..............|.|..............|.|
 ~~~~~
 
-To decode an encoded a point from a 32-byte sequence B:
+To decode an encoded point from a 32-byte sequence B:
 
-* Check that the high-order bit of B[15] is zero
 * Parse out the encoded values y = y0 + y1 * i and s
 * Check that y0 and y1 are both less than p
-* Compute x = (y^2 - 1) * InvSqrt((y^2 - 1) * (d * y^2 - 1)), where
-  InvSqrt(z)=1/sqrt(z) (see {{inversion-and-square-roots}})
-* If the computation of x failed, decoding fails
+* Solve x^2 = (y^2 - 1) * (d * y^2 + 1) for x
 * If s is 0, return the smaller of x and -x (in the lexicographic ordering)
 * If s is 1, return the larger of x and -x
+* Check that (x,y) is a valid point on the curve
 
-This point compression format is from {{SchnorrQ}}, and the similar algorithm
-there MAY be used instead to compute the x coordinates. Any method to decompress
-points MAY be used provided it computes the correct answers. We call the
-operation of compressing a point P into 32 bytes Compress(P), and decompression
-Expand(S). Expand(Compress(P))=P for all P on the curve, and
-Compress(Expand(S))=S if and only if S is a valid representation of a point.
+The appendix {{point-decompression}} details an algorithm for decoding a point
+following the steps above. 
+
+We call the operation of compressing a point P into 32 bytes Compress(P),
+and decompression Expand(S). Expand(Compress(P))=P for all the points P on the curve,
+and Compress(Expand(S))=S if and only if S is a valid representation of a point.
 
 Not all 32 byte strings represent valid points. Implementations MUST reject
 invalid strings and check that decompression is successful. Strings are invalid
@@ -355,9 +344,9 @@ straightforward.
 * R4: (X, Y, Z)
 
 A point doubling (DBL) takes an R4 point and produces an R1 point. For addition,
-we first define an operation ADD\_core that takes a R2 and R3 points and
+we first define an operation ADD\_core that takes an R2 and an R3 point and
 produces an R1 point. This can be used to implement an operation ADD which takes
-a R1 and R2 points as inputs (and produces an R1 point) by first converting the
+an R1 and an R2 point as inputs (and produces an R1 point) by first converting the
 R1 point to R3, and then executing ADD\_core.  Exposing these operations and the
 multiple representations helps save time by avoiding redundant computations: the
 conversion of the first argument to ADD can be done once if the argument will be
@@ -422,7 +411,7 @@ for i=1 to 7:
 ~~~~
 
 Next, take m and reduce it modulo N.  Then, add N if necessary to ensure that m
-is odd. At this point we recode m into a signed digit representation consisting
+is odd. At this point, we recode m into a signed digit representation consisting
 of 63 signed, odd digits d[i] in base 16. The following algorithm accomplishes
 this task.
 
@@ -465,8 +454,8 @@ This algorithm makes use of the identity [m]\*P = [a_1]\*P + [a_2]\*phi(P) +
 [a_3]\*psi(P) + [a_4]\*psi(phi(P)), where a_1, a_2, a_3, and a_4 are 64-bit
 scalars that depend on m. The overall product can then can be computed using a
 small table of 8 precomputed points and 64 doublings and additions. This is
-considerably fewer operations than the algorithm above, at the cost of a more
-complicated implementation.
+considerably fewer operations than the number of operations required by the 
+algorithm above, at the cost of a more complicated implementation.
 
 We describe each phase of the computation separately: the computation of the
 endomorphisms, the scalar decomposition and recoding, the creation of the table
@@ -661,11 +650,11 @@ Diffie-Hellman with cofactor.
 DH(m, P):
       Ensure P on curve and if not return FAILURE
 
-      P1 = DBL(DBL(DBL(DBL(P))))
-      P2 = DBL(DBL(DBL(DBL(P1))))
-      P3 = DBL(P2)
-      Q = ADD(P1, P2)
-      Q = ADD(Q, P3)  # Q = [392]P
+      P1 = DBL(P)
+      P2 = ADD(P1, P)
+      P3 = DBL(DBL(DBL(DBL(P2))))
+      Q = ADD(P3, P)
+      Q = (DBL(DBL(DBL(Q)))  # Q = [392]P
 
       If Q is the neutral point, return FAILURE
 
@@ -691,8 +680,9 @@ G = (X, Y)
 ~~~~
 
 The tables used in multiplications of this generator (small multiples of G for
-windowed multiply, endomorphism images for the optimized multiply) can be
-pre-generated to speed up the first, fixed-point DH computation.
+the multiplication without endomorphisms, or endomorphism images for the optimized
+multiplication with endomorphisms) can be pre-generated to speed up the first,
+fixed-point DH computation.
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared
 key: each picks a random string of 32 bytes, mA and mB, respectively. Alice
@@ -816,39 +806,46 @@ b4 = [ 0x136e340a9108c83f,  0x3122df2dc3e0ff32,
       -0x068a49f02aa8a9b5, -0x18d5087896de0aea]
 ~~~~~
 
-# Inversion and Square roots
+# Point Decompression
 
-Inversion of nonzero elements of GF(p) can be computed in constant-time using
-one exponentiation via Fermat's Little Theorem: 1/a = a^(p - 2) = a^(2^127 - 3).
-
-The following algorithm for computing inverse square roots in GF(p^2) is an
-adaptation of Algorithm 8 from {{SQRT}}. Note that (p-3)/4 is 2^125-1, and there
-is a very short addition chain to compute this value.
+The following algorithm is an adaptation of the decompression algorithm
+from {{SchnorrQ}}. It decodes a 32-byte string B which is formatted as
+detailed in {{representation-of-curve-points}}. The result is a valid
+point P = (x, y) that satisfies the curve equation, or a message of FAILED
+if the decoding had a failure.
 
 ~~~~~
-InvSqrt(a + b*i):
-    if b = 0:
-        t = a^((p-3)/4)     # 1 / sqrt(a)
-        if a * t^2 = 1:
-            return t + 0*i
-        else:
-            return 0 + t*i
-    else:
-        n = a^2 + b^2
-        s = (n)^((p-3)/4)  # 1 / sqrt(n)
-        c = n * s          # sqrt(n)
-        if c * s != 1:
-            return FAILURE
-
-        f = (a + c)/2
-        g = (f)^((p-3)/4)  # 1 / sqrt(f)
-        h = f * g          # sqrt(f)
-        if h * g = -1:
-            f = (a-c)/2
-            g = (f)^((p-3)/4)
-            h = f * g
-
-        x0 = h * s
-        x1 = - (s * b * g) / 2
-        return x0 + x1*i
+Expand(B = [y, s]):
+    Parse out the encoded values y = y0 + y1 * i and s according to {{representation-of-curve-points}}
+    if y0 or y1 >= p:
+        return FAILED
+    u = y^2 - 1             # Set u = u0 + u1 * i
+    v = d*y^2 + 1           # Set v = v0 + v1 * i
+    t0 = u0*v0 + u1*v1;
+    t1 = u1*v0 - u0*v1;
+    t2 = v0^2 + v1^2
+    t3 = (t0^2 + t1^2)^(2^125)
+    t = 2*(t0 + t3)
+    if t = 0:
+        t = 2*(t0 - t3)
+    r = (t * t2^3)^(2^125-1)
+    s = (r * t2) * t
+    x0 = s/2             
+    x1 = (r * t2) * t1      # Set x = x0 + x1 * i
+    if t2 * s^2 = t: 
+        Swap x0 and x1
+    larger = -x             # Set -x = -x0 - x1 * i             
+    smaller = x
+    if (x0 > -x0) or (x0 = -x0 and x1 > -x1):
+        larger = x
+        smaller = -x
+    if s = 0:
+        x = smaller
+    else
+        x = larger
+    if -x^2+y^2 != 1+d*x^2*y^2:
+        x = conj(x)
+    if -x^2+y^2 != 1+d*x^2*y^2:     # Check curve equation
+        return FAILED    
+    return P = (x,y)
 ~~~~~
