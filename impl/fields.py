@@ -13,7 +13,7 @@ class GFp:
     M = 0
     I = 0
 
-    half = 85070591730234615865843651857942052864
+    half = 0x40000000000000000000000000000000
 
     @staticmethod
     def ctr_reset():
@@ -105,6 +105,7 @@ class GFp:
         t1 = GFp.sqr(t1)          # 2^127 - 2^2
         return GFp.mul(t1, x)     # 2^127 - 3
 
+    # 1/sqrt(x) = x^((p-3)/4) = x^(2^125 - 1)
     @staticmethod
     def invsqrt(x):
         xp = GFp.mul(x, x)                  # 2
