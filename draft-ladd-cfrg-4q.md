@@ -650,15 +650,15 @@ Diffie-Hellman with cofactor.
 DH(m, P):
       Ensure P on curve and if not return FAILURE
 
-      P1 = DBL(P)
-      P2 = ADD(P1, P)
-      P3 = DBL(DBL(DBL(DBL(P2))))
-      Q = ADD(P3, P)
-      Q = (DBL(DBL(DBL(Q)))  # Q = [392]P
-
-      If Q is the neutral point, return FAILURE
+      P1 = DBL(P)                 # [2]P
+      P2 = ADD(P1, P)             # [3]P
+      P3 = DBL(DBL(DBL(DBL(P2)))) # [48]P
+      Q = ADD(P3, P)              # [49]P
+      Q = DBL(DBL(DBL(Q))         # [392]P
 
       Compute [m]*Q
+
+      If Q is the neutral point, return FAILURE
 Return [m]*Q in affine coordinates
 ~~~~
 
@@ -816,7 +816,7 @@ if the decoding had a failure.
 
 ~~~~~
 Expand(B = [y, s]):
-    Parse out the encoded values y = y0 + y1 * i and s according to {{representation-of-curve-points}}
+    Parse out the encoded values y = y0 + y1 * i and s
     if y0 or y1 >= p:
         return FAILED
     u = y^2 - 1             # Set u = u0 + u1 * i
@@ -830,11 +830,11 @@ Expand(B = [y, s]):
         t = 2*(t0 - t3)
     r = (t * t2^3)^(2^125-1)
     s = (r * t2) * t
-    x0 = s/2             
+    x0 = s/2
     x1 = (r * t2) * t1      # Set x = x0 + x1 * i
-    if t2 * s^2 = t: 
+    if t2 * s^2 = t:
         Swap x0 and x1
-    larger = -x             # Set -x = -x0 - x1 * i             
+    larger = -x             # Set -x = -x0 - x1 * i
     smaller = x
     if (x0 > -x0) or (x0 = -x0 and x1 > -x1):
         larger = x
@@ -846,6 +846,6 @@ Expand(B = [y, s]):
     if -x^2+y^2 != 1+d*x^2*y^2:
         x = conj(x)
     if -x^2+y^2 != 1+d*x^2*y^2:     # Check curve equation
-        return FAILED    
+        return FAILED
     return P = (x,y)
 ~~~~~

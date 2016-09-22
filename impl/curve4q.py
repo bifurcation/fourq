@@ -57,18 +57,55 @@ def decode(B):
 
     y = (y0, y1)
     y2 = GFp2.sqr(y)
-    y21 = GFp2.sub(y2, GFp2.one)
-    dy21 = GFp2.add(GFp2.mul(d, y2), GFp2.one)
-    sqrt = GFp2.invsqrt(GFp2.mul(y21, dy21))
-    xp = GFp2.mul(y21, sqrt)
-    xm = GFp2.neg(xp)
+    u = GFp2.sub(y2, GFp2.one)
+    v = GFp2.add(GFp2.mul(d, y2), GFp2.one)
+    t0 = GFp.add(GFp.mul(u[0], v[0]), GFp.mul(u[1], v[1]))
+    t1 = GFp.sub(GFp.mul(u[1], v[0]), GFp.mul(u[0], v[1]))
+    t2 = GFp.add(GFp.sqr(v[0]), GFp.sqr(v[1]))
+    t3 = GFp.add(GFp.sqr(t0), GFp.sqr(t1))
+    t3 = GFp.mul(GFp.invsqrt(t3), t3)
 
-    x = min(xp, xm)
-    if s == 1:
-        x = max(xp, xm)
+    t = GFp.mul(2, GFp.add(t0, t3))
+    if t == 0:
+        t = GFp.mul(GFp.two, GFp.sub(t0, t3))
+
+    r = GFp.invsqrt(GFp.mul(t, GFp.mul(t2, GFp.sqr(t2))))
+    s = GFp.mul(GFp.mul(r, t2), t)
+
+    x0 = GFp.mul(s, GFp.half)
+    x1 = GFp.mul(GFp.mul(r, t2), t1)
+    if t == GFp.mul(t2, GFp.sqr(s)):
+        x0, x1 = x1, x0
+    smaller = (x0, x1)
+    larger = GFp2.neg(smaller)
+    if (x0 > p1271 - x0) or (x0 == 0 and (x1 > p1271 - x1)):
+        larger, smaller = smaller, larger
+
+    x = None
+    if s == 0:
+        x = smaller
+    else:
+        x = larger
 
     if not PointOnCurve((x, y)):
-        raise Exception("Malformed point: not on curve")
+        x = GFp2.conj(x)
+    if not PointOnCurve((x, y)):
+        raise Exception("Point not on curve")
+
+#    y = (y0, y1)
+#    y2 = GFp2.sqr(y)
+#    y21 = GFp2.sub(y2, GFp2.one)
+#    dy21 = GFp2.add(GFp2.mul(d, y2), GFp2.one)
+#    sqrt = GFp2.invsqrt(GFp2.mul(y21, dy21))
+#    xp = GFp2.mul(y21, sqrt)
+#    xm = GFp2.neg(xp)
+#
+#    x = min(xp, xm)
+#    if s == 1:
+#        x = max(xp, xm)
+#
+#    if not PointOnCurve((x, y)):
+#        raise Exception("Malformed point: not on curve")
 
     return (x, y)
 
@@ -425,11 +462,12 @@ def DH_core(m, P, mul, table=None):
         raise Exception("Point not on curve")
 
     P0 = AffineToR1(P[0], P[1])
-    P1 = DBL(DBL(DBL(P0)))
-    P2 = DBL(DBL(DBL(DBL(P1))))
-    P3 = DBL(P2)
-    Q = ADD(P1, R1toR2(P2))
-    Q = ADD(Q, R1toR2(P3))
+    P1 = DBL(P0)
+    P2 = ADD(P1, R1toR2(P0))
+    P3 = DBL(DBL(DBL(DBL(P2))))
+    Q = ADD(P3, R1toR2(P0))
+    Q = DBL(DBL(DBL(Q)))
+
     Q = R1toAffine(mul(m, Q, table=table))
 
     if Q == (Ox, Oy):
@@ -456,8 +494,12 @@ def test_encode():
     encTest = encode(Gx, Gy)
     test.test("encode", Genc, str(encTest).encode("hex"))
 
-    decTest = decode(bytearray(Genc.decode("hex")))
-    test.test("decode", (Gx, Gy), decTest)
+    try:
+        decTest = decode(bytearray(Genc.decode("hex")))
+        test.test("decode", (Gx, Gy), decTest)
+    except:
+        test.test("decode", True, False)
+
 
 def test_reps():
     x  = (0, 1)
