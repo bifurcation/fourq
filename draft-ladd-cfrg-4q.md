@@ -815,37 +815,50 @@ point P = (x, y) that satisfies the curve equation, or a message of FAILED
 if the decoding had a failure.
 
 ~~~~~
+Sign(x0 + x1*i):
+    s0 = X[0] >> 126
+    s1 = X[1] >> 126
+    if X[0] != 0:
+        return s0
+    else:
+        return s1
+
+Compress(X, Y):
+    B = Y encoded following {{representation-of-curve-points}}
+    Set the to bit to Sign(X)
+    return B
+
 Expand(B = [y, s]):
     Parse out the encoded values y = y0 + y1 * i and s
     if y0 or y1 >= p:
         return FAILED
+
     u = y^2 - 1             # Set u = u0 + u1 * i
     v = d*y^2 + 1           # Set v = v0 + v1 * i
+
     t0 = u0*v0 + u1*v1;
     t1 = u1*v0 - u0*v1;
     t2 = v0^2 + v1^2
     t3 = (t0^2 + t1^2)^(2^125)
+
     t = 2*(t0 + t3)
     if t = 0:
         t = 2*(t0 - t3)
-    r = (t * t2^3)^(2^125-1)
-    s = (r * t2) * t
-    x0 = s/2
-    x1 = (r * t2) * t1      # Set x = x0 + x1 * i
-    if t2 * s^2 = t:
+
+    a = (t * t2^3)^(2^125-1)
+    b = (a * t2) * t
+    x0 = b/2
+    x1 = (a * t2) * t1
+    if t2 * b^2 = t:
         Swap x0 and x1
-    larger = -x             # Set -x = -x0 - x1 * i
-    smaller = x
-    if (x0 > -x0) or (x0 = -x0 and x1 > -x1):
-        larger = x
-        smaller = -x
-    if s = 0:
-        x = smaller
-    else
-        x = larger
-    if -x^2+y^2 != 1+d*x^2*y^2:
+
+    x = x0 + x1 * i
+    if Sign(x) != s:
+      x = -x
+
+    if -x^2+y^2 != 1+d*x^2*y^2:  # Check curve equation with x
         x = conj(x)
-    if -x^2+y^2 != 1+d*x^2*y^2:     # Check curve equation
+    if -x^2+y^2 != 1+d*x^2*y^2:  # ... or its conjugate
         return FAILED
     return P = (x,y)
 ~~~~~

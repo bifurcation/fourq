@@ -30,12 +30,18 @@ def PointOnCurve(P):
 
 ########## Point encoding / decoding ##########
 
+def sign(X):
+    s0 = X[0] >> 126
+    s1 = X[1] >> 126
+    if X[0] != 0:
+        return s0
+    else:
+        return s1
+
 def encode(X, Y):
     y0 = GFp.toLittleEndian(Y[0])
     y1 = GFp.toLittleEndian(Y[1])
-    s0 = X[0] >> 127
-    s1 = X[1] >> 127
-    s = s0 | ((1 ^ s0) & s1)
+    s = sign(X)
     y1[15] |= (s << 7)
     return y0 + y1
 
@@ -57,11 +63,12 @@ def decode(B):
 
     y = (y0, y1)
     y2 = GFp2.sqr(y)
-    u = GFp2.sub(y2, GFp2.one)
-    v = GFp2.add(GFp2.mul(d, y2), GFp2.one)
-    t0 = GFp.add(GFp.mul(u[0], v[0]), GFp.mul(u[1], v[1]))
-    t1 = GFp.sub(GFp.mul(u[1], v[0]), GFp.mul(u[0], v[1]))
-    t2 = GFp.add(GFp.sqr(v[0]), GFp.sqr(v[1]))
+    (u0, u1) = GFp2.sub(y2, GFp2.one)
+    (v0, v1) = GFp2.add(GFp2.mul(d, y2), GFp2.one)
+
+    t0 = GFp.add(GFp.mul(u0, v0), GFp.mul(u1, v1))
+    t1 = GFp.sub(GFp.mul(u1, v0), GFp.mul(u0, v1))
+    t2 = GFp.add(GFp.sqr(v0), GFp.sqr(v1))
     t3 = GFp.add(GFp.sqr(t0), GFp.sqr(t1))
     t3 = GFp.mul(GFp.invsqrt(t3), t3)
 
@@ -69,43 +76,22 @@ def decode(B):
     if t == 0:
         t = GFp.mul(GFp.two, GFp.sub(t0, t3))
 
-    r = GFp.invsqrt(GFp.mul(t, GFp.mul(t2, GFp.sqr(t2))))
-    s = GFp.mul(GFp.mul(r, t2), t)
+    a = GFp.invsqrt(GFp.mul(t, GFp.mul(t2, GFp.sqr(t2))))
+    b = GFp.mul(GFp.mul(a, t2), t)
 
-    x0 = GFp.mul(s, GFp.half)
-    x1 = GFp.mul(GFp.mul(r, t2), t1)
-    if t == GFp.mul(t2, GFp.sqr(s)):
+    x0 = GFp.mul(b, GFp.half)
+    x1 = GFp.mul(GFp.mul(a, t2), t1)
+    if t != GFp.mul(t2, GFp.sqr(b)):
         x0, x1 = x1, x0
-    smaller = (x0, x1)
-    larger = GFp2.neg(smaller)
-    if (x0 > p1271 - x0) or (x0 == 0 and (x1 > p1271 - x1)):
-        larger, smaller = smaller, larger
 
-    x = None
-    if s == 0:
-        x = smaller
-    else:
-        x = larger
+    x = (x0, x1)
+    if sign(x) != s:
+        x = GFp2.neg(x)
 
     if not PointOnCurve((x, y)):
         x = GFp2.conj(x)
     if not PointOnCurve((x, y)):
         raise Exception("Point not on curve")
-
-#    y = (y0, y1)
-#    y2 = GFp2.sqr(y)
-#    y21 = GFp2.sub(y2, GFp2.one)
-#    dy21 = GFp2.add(GFp2.mul(d, y2), GFp2.one)
-#    sqrt = GFp2.invsqrt(GFp2.mul(y21, dy21))
-#    xp = GFp2.mul(y21, sqrt)
-#    xm = GFp2.neg(xp)
-#
-#    x = min(xp, xm)
-#    if s == 1:
-#        x = max(xp, xm)
-#
-#    if not PointOnCurve((x, y)):
-#        raise Exception("Malformed point: not on curve")
 
     return (x, y)
 
@@ -497,8 +483,8 @@ def test_encode():
     try:
         decTest = decode(bytearray(Genc.decode("hex")))
         test.test("decode", (Gx, Gy), decTest)
-    except:
-        test.test("decode", True, False)
+    except Exception as err:
+        test.test("decode", err, None)
 
 
 def test_reps():

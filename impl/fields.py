@@ -105,6 +105,7 @@ class GFp:
         t1 = GFp.sqr(t1)          # 2^127 - 2^2
         return GFp.mul(t1, x)     # 2^127 - 3
 
+    # 1/sqrt(x) = x^((p-3)/4) = x^(2^125 - 1)
     @staticmethod
     def invsqrt(x):
         xp = GFp.mul(x, x)                  # 2
