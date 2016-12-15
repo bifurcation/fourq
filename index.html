@@ -394,7 +394,7 @@ address {
   <h1 id="rfc.section.1"><a href="#rfc.section.1">1.</a> <a href="#introduction" id="introduction">Introduction</a></h1>
 <p id="rfc.section.1.p.1">Public key cryptography continues to be computationally expensive, particularly on less powerful devices. While recent advances in efficient formulas for addition and doubling have substantially reduced the cost of elliptic curve operations in terms of field operations, the number of group operations involved in scalar multiplication has not been reduced in the curves considered for IETF use. Using curves with efficiently computable endomorphisms can reduce the number of group operations by turning one long scalar multiplication into the sum of several multiplications by smaller scalars, which can be evaluated more efficiently.</p>
 <p id="rfc.section.1.p.2">For curves over quadratic extension fieldss, there are more endomorphism families to choose from, and the field operations are often more efficient compared to prime fields of the same size.  The ideal case is given by curves equipped with two distinct endomorphisms, so that it becomes possible to divide scalars into four parts.  We focus on curves defined over the field GF(p^2) for the Mersenne prime p = 2^127 - 1, which offers extremely efficient arithmetic.  Together, these improvements substantially reduce computation time compared to other proposed Diffie-Hellman key exchange and digital signature schemes.  However, the combined availability of these features severely restricts the curves that can be used for cryptographic applications.</p>
-<p id="rfc.section.1.p.3">As described in <a href="#Curve4Q">[Curve4Q]</a>, the elliptic curve &#8220;Curve4Q&#8221; defined in this document is the only known elliptic curve that (1) permits a four dimensional decomposition (using two endomorphisms) over GF(p^2) and (2) has a large prime order subgroup.  The order of this subgroup is approximately 2^246, which provides around 128 bits of security. No other known elliptic curve with such a decomposition has a larger prime order subgroup over this field.  This &#8220;uniqueness&#8221; allays concerns about selecting curves vulnerable to undisclosed attacks.</p>
+<p id="rfc.section.1.p.3">As described in <a href="#Curve4Q">[Curve4Q]</a>, the elliptic curve &#8220;Curve4Q&#8221; defined in this document is a special instance of the recent endomorphism-based constructions from <a href="#Qcurve">[Qcurve]</a> and <a href="#GLV4">[GLV4]</a>, and is the only known elliptic curve that (1) permits a four dimensional decomposition (using two endomorphisms) over GF(p^2) and (2) has a large prime order subgroup.  The order of this subgroup is approximately 2^246, which provides around 128 bits of security.  No other known elliptic curve with such a decomposition has a larger prime order subgroup over this field.  This &#8220;uniqueness&#8221; allays concerns about selecting curves vulnerable to undisclosed attacks.</p>
 <p id="rfc.section.1.p.4">Curve4Q can be used to implement Diffie-Hellman key exchange, as described below.  It is also possible to use Curve4Q as the basis for digital signature scheme (e.g., <a href="#SchnorrQ">[SchnorrQ]</a>).</p>
 <h1 id="rfc.section.2"><a href="#rfc.section.2">2.</a> <a href="#mathematical-prerequisites" id="mathematical-prerequisites">Mathematical Prerequisites</a></h1>
 <p id="rfc.section.2.p.1">Curve4Q is defined over the finite field GF(p^2), where p is the Mersenne prime 2^127 - 1.  Elements of this finite field have the form (a + b * i), where a and b are elements of the finite field GF(p) (i.e., integers mod p) and i^2 = -1.</p>
@@ -693,9 +693,9 @@ Gy = 0x0E3FEE9BA120785AB924A2462BCBB287 +
 G = (X, Y)
 </pre>
 <p id="rfc.section.5.p.4">The tables used in multiplications of this generator (small multiples of G for the multiplication without endomorphisms, or endomorphism images for the optimized multiplication with endomorphisms) can be pre-generated to speed up the first, fixed-point DH computation.</p>
-<p id="rfc.section.5.p.5">Two users, Alice and Bob, can carry out the following steps to derive a shared key: each picks a random string of 32 bytes, mA and mB, respectively. Alice computes the public key A = Compress(DH(mA, G)), and Bob computes the public key B = Compress(DH(mB, G)). They exchange A and B, and then Alice computes KAB = DH(mA, Expand(B)) while Bob computes KBA = DH(mB, Expand(A)), which produces the shared point K = KAB = KBA. The y coordinate of K, represented as a 32 byte string as detailed in <a href="#representation-of-curve-points">Section 3</a> is the shared secret.</p>
+<p id="rfc.section.5.p.5">Two users, Alice and Bob, can carry out the following steps to derive a shared key: each picks a random string of 32 bytes, mA and mB, respectively. Alice computes the public key A = Compress([mA]*G), and Bob computes the public key B = Compress([mB]*G). They exchange A and B, and then Alice computes KAB = DH(mA, Expand(B)) while Bob computes KBA = DH(mB, Expand(A)), which produces the shared point K = KAB = KBA. The y coordinate of K, represented as a 32 byte string as detailed in <a href="#representation-of-curve-points">Section 3</a> is the shared secret.</p>
 <p id="rfc.section.5.p.6">If the received strings are not valid points, the DH function has failed to compute an answer. Implementations SHOULD return a random 32 byte string as well as return an error, to prevent bugs when applications ignore return codes. They MUST signal an error when decompression fails.</p>
-<p id="rfc.section.5.p.7">Implementations MAY use any method to carry out these calculations, provided that it agrees with the above function on all inputs and failure cases, and does not leak information about secret keys. For example, refer to the constant-time fixed-base scalar multiplication algorithm implemented in <a href="#FourQlib">[FourQlib]</a> to accelerate the computation of DH(m, G).</p>
+<p id="rfc.section.5.p.7">Implementations MAY use any method to carry out these calculations, provided that it agrees with the above function on all inputs and failure cases, and does not leak information about secret keys. For example, refer to the constant-time fixed-base scalar multiplication algorithm implemented in <a href="#FourQlib">[FourQlib]</a> to accelerate the computation of multiplications by the generator G.</p>
 <h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> <a href="#iana-considerations" id="iana-considerations">IANA Considerations</a></h1>
 <p id="rfc.section.6.p.1">[RFC Editor: please remove this section prior to publication] This document has no IANA actions.</p>
 <h1 id="rfc.section.7"><a href="#rfc.section.7">7.</a> <a href="#security-considerations" id="security-considerations">Security Considerations</a></h1>
@@ -861,7 +861,7 @@ Sign(x0 + x1*i):
 
 Compress(X, Y):
     B = Y encoded following {{representation-of-curve-points}}
-    Set the to bit to Sign(X)
+    Set the top bit to Sign(X)
     return B
 
 Expand(B = [y, s]):
@@ -885,7 +885,7 @@ Expand(B = [y, s]):
     b = (a * t2) * t
     x0 = b/2
     x1 = (a * t2) * t1
-    if t2 * b^2 = t:
+    if t2 * b^2 != t:
         Swap x0 and x1
 
     x = x0 + x1 * i

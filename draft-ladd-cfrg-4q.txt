@@ -119,13 +119,15 @@ Internet-Draft                   Curve4Q                   December 2016
    be used for cryptographic applications.
 
    As described in [Curve4Q], the elliptic curve "Curve4Q" defined in
-   this document is the only known elliptic curve that (1) permits a
-   four dimensional decomposition (using two endomorphisms) over GF(p^2)
-   and (2) has a large prime order subgroup.  The order of this subgroup
-   is approximately 2^246, which provides around 128 bits of security.
-   No other known elliptic curve with such a decomposition has a larger
-   prime order subgroup over this field.  This "uniqueness" allays
-   concerns about selecting curves vulnerable to undisclosed attacks.
+   this document is a special instance of the recent endomorphism-based
+   constructions from [Qcurve] and [GLV4], and is the only known
+   elliptic curve that (1) permits a four dimensional decomposition
+   (using two endomorphisms) over GF(p^2) and (2) has a large prime
+   order subgroup.  The order of this subgroup is approximately 2^246,
+   which provides around 128 bits of security.  No other known elliptic
+   curve with such a decomposition has a larger prime order subgroup
+   over this field.  This "uniqueness" allays concerns about selecting
+   curves vulnerable to undisclosed attacks.
 
    Curve4Q can be used to implement Diffie-Hellman key exchange, as
    described below.  It is also possible to use Curve4Q as the basis for
@@ -160,8 +162,6 @@ Internet-Draft                   Curve4Q                   December 2016
    a^(2^127 - 3) for any element a of GF(p).  One can use a fixed
    addition chain to compute a^(2^127 - 3) (e.g., see [FourQlib]).
 
-   Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
-   following curve equation:
 
 
 
@@ -169,6 +169,9 @@ Ladd, et al.              Expires June 18, 2017                 [Page 3]
 
 Internet-Draft                   Curve4Q                   December 2016
 
+
+   Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
+   following curve equation:
 
    E: -x^2 + y^2 = 1 + d * x^2 * y^2, with
 
@@ -214,9 +217,6 @@ Internet-Draft                   Curve4Q                   December 2016
    256^15*b[15].  Since we are representing numbers in the range [0,
    2^127-1), the top bit of b[15] is always zero.
 
-   An element x0 + x1*i of GF(p^2) is represented on the wire by the
-   concatenation of the encodings for x0 and x1.  A point (x, y) on
-   Curve4Q is serialized in a compressed form as the representation of y
 
 
 
@@ -226,6 +226,9 @@ Ladd, et al.              Expires June 18, 2017                 [Page 4]
 Internet-Draft                   Curve4Q                   December 2016
 
 
+   An element x0 + x1*i of GF(p^2) is represented on the wire by the
+   concatenation of the encodings for x0 and x1.  A point (x, y) on
+   Curve4Q is serialized in a compressed form as the representation of y
    with a modified top bit.  This top bit is used to disambiguate
    between x and -x during decoding.
 
@@ -271,9 +274,6 @@ Internet-Draft                   Curve4Q                   December 2016
    Strings are invalid if they are not possible outputs of the
    compression operator.  In particular the values of y0 and y1 MUST be
    less then p.
-
-
-
 
 
 
@@ -732,12 +732,12 @@ Internet-Draft                   Curve4Q                   December 2016
 
    Two users, Alice and Bob, can carry out the following steps to derive
    a shared key: each picks a random string of 32 bytes, mA and mB,
-   respectively.  Alice computes the public key A = Compress(DH(mA, G)),
-   and Bob computes the public key B = Compress(DH(mB, G)).  They
-   exchange A and B, and then Alice computes KAB = DH(mA, Expand(B))
-   while Bob computes KBA = DH(mB, Expand(A)), which produces the shared
-   point K = KAB = KBA.  The y coordinate of K, represented as a 32 byte
-   string as detailed in Section 3 is the shared secret.
+   respectively.  Alice computes the public key A = Compress([mA]*G),
+   and Bob computes the public key B = Compress([mB]*G).  They exchange
+   A and B, and then Alice computes KAB = DH(mA, Expand(B)) while Bob
+   computes KBA = DH(mB, Expand(A)), which produces the shared point K =
+   KAB = KBA.  The y coordinate of K, represented as a 32 byte string as
+   detailed in Section 3 is the shared secret.
 
    If the received strings are not valid points, the DH function has
    failed to compute an answer.  Implementations SHOULD return a random
@@ -750,7 +750,7 @@ Internet-Draft                   Curve4Q                   December 2016
    failure cases, and does not leak information about secret keys.  For
    example, refer to the constant-time fixed-base scalar multiplication
    algorithm implemented in [FourQlib] to accelerate the computation of
-   DH(m, G).
+   multiplications by the generator G.
 
 6.  IANA Considerations
 
@@ -1020,7 +1020,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
    Compress(X, Y):
        B = Y encoded following {{representation-of-curve-points}}
-       Set the to bit to Sign(X)
+       Set the top bit to Sign(X)
        return B
 
    Expand(B = [y, s]):
@@ -1044,7 +1044,7 @@ Internet-Draft                   Curve4Q                   December 2016
        b = (a * t2) * t
        x0 = b/2
        x1 = (a * t2) * t1
-       if t2 * b^2 = t:
+       if t2 * b^2 != t:
            Swap x0 and x1
 
        x = x0 + x1 * i
