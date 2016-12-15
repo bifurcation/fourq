@@ -41,6 +41,24 @@ informative:
          -
               ins: P. Longa
 
+    Qcurve:
+      target: "http://eprint.iacr.org/2014/727.pdf"
+      title: "The Q-curve Construction for Endomorphism-Accelerated Elliptic Curves"
+      date: 2016
+      author:
+         -
+              ins: B. Smith
+
+    GLV4:
+      target: "http://eprint.iacr.org/2013/311.pdf"
+      title: "Four-dimensional GLV via the Weil restriction"
+      date: 2013
+      author:
+         -
+              ins: A. Guillevic
+         -
+              ins: S. Ionica
+
     Distinguished:
        target: "http://people.scs.carleton.ca/~paulv/papers/JoC97.pdf"
        title: "Parallel Collision Search with Cryptanalytic Applications"
@@ -63,7 +81,7 @@ informative:
 
     Invsqr:
         target: "http://eprint.iacr.org/2012/309.pdf"
-        title: Fast and compact elliptic-curve cryptography
+        title: "Fast and compact elliptic-curve cryptography"
         date: 2012
         author:
            -
@@ -115,7 +133,7 @@ informative:
 
     TwistedRevisited:
        target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
-       title: Twisted Edwards Curves Revisited
+       title: "Twisted Edwards Curves Revisited"
        date: 2008
        author:
           -
@@ -129,7 +147,7 @@ informative:
 
     Twisted:
        target: "http://eprint.iacr.org/2008/013.pdf"
-       title: Twisted Edwards Curves
+       title: "Twisted Edwards Curves"
        date: 2008
        author:
           -
@@ -145,9 +163,9 @@ informative:
 
 --- abstract
 
-This document specifies a twisted Edwards curve that takes advantage
-of arithmetic over the field GF(2^127-1) and two endomorphisms to achieve
-the speediest Diffie-Hellman key agreements over a group of order
+This document specifies Curve4Q, a twisted Edwards curve proposed in {{Curve4Q}}
+that takes advantage of arithmetic over the field GF(2^127-1) and two endomorphisms
+to achieve the speediest Diffie-Hellman key agreements over a group of order
 approximately 2^246, which provides around 128 bits of security.
 Curve4Q implementations are more than two times faster than those of Curve25519
 and, when not using endomorphisms, are between 1.2 and 1.6 times faster.
