@@ -196,13 +196,14 @@ signature schemes.  However, the combined availability of these features
 severely restricts the curves that can be used for cryptographic applications.
 
 As described in {{Curve4Q}}, the elliptic curve "Curve4Q" defined in this
-document is the only known elliptic curve that (1) permits a four dimensional
-decomposition (using two endomorphisms) over GF(p^2) and (2) has a large prime
-order subgroup.  The order of this subgroup is approximately 2^246, which
-provides around 128 bits of security. No other known elliptic curve with such a
-decomposition has a larger prime order subgroup over this field.  This
-"uniqueness" allays concerns about selecting curves vulnerable to undisclosed
-attacks.
+document is a special instance of the recent endomorphism-based constructions
+from {{Qcurve}} and {{4GLV}}, and is the only known elliptic curve that
+(1) permits a four dimensional decomposition (using two endomorphisms) over
+GF(p^2) and (2) has a large prime order subgroup.  The order of this subgroup
+is approximately 2^246, which provides around 128 bits of security.  No other
+known elliptic curve with such a decomposition has a larger prime order subgroup
+over this field.  This "uniqueness" allays concerns about selecting curves
+vulnerable to undisclosed attacks.
 
 Curve4Q can be used to implement Diffie-Hellman key exchange, as described
 below.  It is also possible to use Curve4Q as the basis for digital signature
@@ -704,8 +705,8 @@ fixed-point DH computation.
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared
 key: each picks a random string of 32 bytes, mA and mB, respectively. Alice
-computes the public key A = Compress(DH(mA, G)), and Bob computes the public key
-B = Compress(DH(mB, G)). They exchange A and B, and then Alice computes KAB =
+computes the public key A = Compress([mA]\*G), and Bob computes the public key
+B = Compress([mB]\*G). They exchange A and B, and then Alice computes KAB =
 DH(mA, Expand(B)) while Bob computes KBA = DH(mB, Expand(A)), which produces the
 shared point K = KAB = KBA. The y coordinate of K, represented as a 32 byte
 string as detailed in {{representation-of-curve-points}} is the shared
@@ -720,7 +721,7 @@ Implementations MAY use any method to carry out these calculations, provided
 that it agrees with the above function on all inputs and failure cases, and does
 not leak information about secret keys. For example, refer to the constant-time
 fixed-base scalar multiplication algorithm implemented in {{FourQlib}} to
-accelerate the computation of DH(m, G).
+accelerate the computation of multiplications by the generator G.
 
 # IANA Considerations
 
@@ -843,7 +844,7 @@ Sign(x0 + x1*i):
 
 Compress(X, Y):
     B = Y encoded following {{representation-of-curve-points}}
-    Set the to bit to Sign(X)
+    Set the top bit to Sign(X)
     return B
 
 Expand(B = [y, s]):
@@ -867,7 +868,7 @@ Expand(B = [y, s]):
     b = (a * t2) * t
     x0 = b/2
     x1 = (a * t2) * t1
-    if t2 * b^2 = t:
+    if t2 * b^2 != t:
         Swap x0 and x1
 
     x = x0 + x1 * i
