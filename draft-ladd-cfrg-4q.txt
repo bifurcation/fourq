@@ -5,10 +5,10 @@
 Network Working Group                                            W. Ladd
 Internet-Draft                                               UC Berkeley
 Intended status: Standards Track                                P. Longa
-Expires: June 6, 2017                                 Microsoft Research
+Expires: June 18, 2017                                Microsoft Research
                                                                R. Barnes
                                                                  Mozilla
-                                                       December 03, 2016
+                                                       December 15, 2016
 
 
                                 Curve4Q
@@ -16,13 +16,13 @@ Expires: June 6, 2017                                 Microsoft Research
 
 Abstract
 
-   This document specifies a twisted Edwards curve that takes advantage
-   of arithmetic over the field GF(2^127-1) and two endomorphisms to
-   achieve the speediest Diffie-Hellman key agreements over a group of
-   order approximately 2^246, which provides around 128 bits of
-   security.  Curve4Q implementations are more than two times faster
-   than those of Curve25519 and, when not using endomorphisms, are
-   between 1.2 and 1.6 times faster.
+   This document specifies Curve4Q, a twisted Edwards curve proposed in
+   [Curve4Q] that takes advantage of arithmetic over the field
+   GF(2^127-1) and two endomorphisms to achieve the speediest Diffie-
+   Hellman key agreements over a group of order approximately 2^246,
+   which provides around 128 bits of security.  Curve4Q implementations
+   are more than two times faster than those of Curve25519 and, when not
+   using endomorphisms, are between 1.2 and 1.6 times faster.
 
 Status of This Memo
 
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on June 6, 2017.
+   This Internet-Draft will expire on June 18, 2017.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 1]
+Ladd, et al.              Expires June 18, 2017                 [Page 1]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 2]
+Ladd, et al.              Expires June 18, 2017                 [Page 2]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -165,7 +165,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 3]
+Ladd, et al.              Expires June 18, 2017                 [Page 3]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -221,7 +221,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 4]
+Ladd, et al.              Expires June 18, 2017                 [Page 4]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -277,7 +277,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 5]
+Ladd, et al.              Expires June 18, 2017                 [Page 5]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -333,7 +333,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 6]
+Ladd, et al.              Expires June 18, 2017                 [Page 6]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -389,7 +389,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 7]
+Ladd, et al.              Expires June 18, 2017                 [Page 7]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -445,7 +445,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 8]
+Ladd, et al.              Expires June 18, 2017                 [Page 8]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -501,7 +501,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                  [Page 9]
+Ladd, et al.              Expires June 18, 2017                 [Page 9]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -557,7 +557,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 10]
+Ladd, et al.              Expires June 18, 2017                [Page 10]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -613,7 +613,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 11]
+Ladd, et al.              Expires June 18, 2017                [Page 11]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -669,7 +669,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 12]
+Ladd, et al.              Expires June 18, 2017                [Page 12]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -725,7 +725,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 13]
+Ladd, et al.              Expires June 18, 2017                [Page 13]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -781,7 +781,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 14]
+Ladd, et al.              Expires June 18, 2017                [Page 14]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -837,14 +837,22 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 15]
+Ladd, et al.              Expires June 18, 2017                [Page 15]
 
 Internet-Draft                   Curve4Q                   December 2016
 
 
+   [GLV4]     Guillevic, A. and S. Ionica, "Four-dimensional GLV via the
+              Weil restriction", 2013,
+              <http://eprint.iacr.org/2013/311.pdf>.
+
    [Invsqr]   Hamburg, M., "Fast and compact elliptic-curve
               cryptography", 2012,
               <http://eprint.iacr.org/2012/309.pdf>.
+
+   [Qcurve]   Smith, B., "The Q-curve Construction for Endomorphism-
+              Accelerated Elliptic Curves", 2016,
+              <http://eprint.iacr.org/2014/727.pdf>.
 
    [RFC5246]  Dierks, T. and E. Rescorla, "The Transport Layer Security
               (TLS) Protocol Version 1.2", RFC 5246,
@@ -885,15 +893,7 @@ Appendix A.  Constants
 
 
 
-
-
-
-
-
-
-
-
-Ladd, et al.              Expires June 6, 2017                 [Page 16]
+Ladd, et al.              Expires June 18, 2017                [Page 16]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -949,7 +949,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 17]
+Ladd, et al.              Expires June 18, 2017                [Page 17]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -1005,7 +1005,7 @@ Appendix B.  Point Decompression
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 18]
+Ladd, et al.              Expires June 18, 2017                [Page 18]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -1061,7 +1061,7 @@ Internet-Draft                   Curve4Q                   December 2016
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 19]
+Ladd, et al.              Expires June 18, 2017                [Page 19]
 
 Internet-Draft                   Curve4Q                   December 2016
 
@@ -1117,4 +1117,4 @@ Authors' Addresses
 
 
 
-Ladd, et al.              Expires June 6, 2017                 [Page 20]
+Ladd, et al.              Expires June 18, 2017                [Page 20]

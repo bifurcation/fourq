@@ -301,9 +301,9 @@ address {
 
   <meta name="dct.creator" content="Ladd, W., Longa, P., and R. Barnes" />
   <meta name="dct.identifier" content="urn:ietf:id:draft-barnes-cfrg-4q-latest" />
-  <meta name="dct.issued" scheme="ISO8601" content="2016-12-03" />
-  <meta name="dct.abstract" content="This document specifies a twisted Edwards curve that takes advantage of arithmetic over the field GF(2^127-1) and two endomorphisms to achieve the speediest Diffie-Hellman key agreements over a group of order approximately 2^246, which provides around 128 bits of security.  Curve4Q implementations are more than two times faster than those of Curve25519 and, when not using endomorphisms, are between 1.2 and 1.6 times faster." />
-  <meta name="description" content="This document specifies a twisted Edwards curve that takes advantage of arithmetic over the field GF(2^127-1) and two endomorphisms to achieve the speediest Diffie-Hellman key agreements over a group of order approximately 2^246, which provides around 128 bits of security.  Curve4Q implementations are more than two times faster than those of Curve25519 and, when not using endomorphisms, are between 1.2 and 1.6 times faster." />
+  <meta name="dct.issued" scheme="ISO8601" content="2016-12-15" />
+  <meta name="dct.abstract" content="This document specifies Curve4Q, a twisted Edwards curve proposed in " />
+  <meta name="description" content="This document specifies Curve4Q, a twisted Edwards curve proposed in " />
 
 </head>
 
@@ -325,7 +325,7 @@ address {
   <td class="right">P. Longa</td>
 </tr>
 <tr>
-  <td class="left">Expires: June 6, 2017</td>
+  <td class="left">Expires: June 18, 2017</td>
   <td class="right">Microsoft Research</td>
 </tr>
 <tr>
@@ -338,7 +338,7 @@ address {
 </tr>
 <tr>
   <td class="left"></td>
-  <td class="right">December 03, 2016</td>
+  <td class="right">December 15, 2016</td>
 </tr>
 
     	
@@ -351,14 +351,14 @@ address {
   <h1 id="rfc.abstract">
   <a href="#rfc.abstract">Abstract</a>
 </h1>
-<p>This document specifies a twisted Edwards curve that takes advantage of arithmetic over the field GF(2^127-1) and two endomorphisms to achieve the speediest Diffie-Hellman key agreements over a group of order approximately 2^246, which provides around 128 bits of security.  Curve4Q implementations are more than two times faster than those of Curve25519 and, when not using endomorphisms, are between 1.2 and 1.6 times faster.</p>
+<p>This document specifies Curve4Q, a twisted Edwards curve proposed in <a href="#Curve4Q">[Curve4Q]</a> that takes advantage of arithmetic over the field GF(2^127-1) and two endomorphisms to achieve the speediest Diffie-Hellman key agreements over a group of order approximately 2^246, which provides around 128 bits of security.  Curve4Q implementations are more than two times faster than those of Curve25519 and, when not using endomorphisms, are between 1.2 and 1.6 times faster.</p>
 <h1 id="rfc.status">
   <a href="#rfc.status">Status of This Memo</a>
 </h1>
 <p>This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.</p>
 <p>Internet-Drafts are working documents of the Internet Engineering Task Force (IETF).  Note that other groups may also distribute working documents as Internet-Drafts.  The list of current Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
 <p>Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."</p>
-<p>This Internet-Draft will expire on June 6, 2017.</p>
+<p>This Internet-Draft will expire on June 18, 2017.</p>
 <h1 id="rfc.copyrightnotice">
   <a href="#rfc.copyrightnotice">Copyright Notice</a>
 </h1>
@@ -744,9 +744,21 @@ G = (X, Y)
     </tr>
     <tr>
       <td class="reference">
+        <b id="GLV4">[GLV4]</b>
+      </td>
+      <td class="top"><a>Guillevic, A.</a> and <a>S. Ionica</a>, "<a href="http://eprint.iacr.org/2013/311.pdf">Four-dimensional GLV via the Weil restriction</a>", 2013.</td>
+    </tr>
+    <tr>
+      <td class="reference">
         <b id="Invsqr">[Invsqr]</b>
       </td>
       <td class="top"><a>Hamburg, M.</a>, "<a href="http://eprint.iacr.org/2012/309.pdf">Fast and compact elliptic-curve cryptography</a>", 2012.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="Qcurve">[Qcurve]</b>
+      </td>
+      <td class="top"><a>Smith, B.</a>, "<a href="http://eprint.iacr.org/2014/727.pdf">The Q-curve Construction for Endomorphism-Accelerated Elliptic Curves</a>", 2016.</td>
     </tr>
     <tr>
       <td class="reference">
@@ -954,6 +966,6 @@ Expand(B = [y, s]):
   </address>
 </div>
 
-  <div class="github-fork-ribbon-wrapper"><div class="github-fork-ribbon"><a href="https://github.com/{SLUG}">Fork me on GitHub</a></div></div>
+  <div class="github-fork-ribbon-wrapper"><div class="github-fork-ribbon"><a href="https://github.com/bifurcation/fourq">Fork me on GitHub</a></div></div>
 </body>
 </html>
