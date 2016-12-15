@@ -868,7 +868,7 @@ Expand(B = [y, s]):
     b = (a * t2) * t
     x0 = b/2
     x1 = (a * t2) * t1
-    if t2 * b^2 != t:
+    if t2 * b^2 = t:
         Swap x0 and x1
 
     x = x0 + x1 * i
