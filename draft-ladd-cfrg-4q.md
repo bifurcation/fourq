@@ -36,10 +36,23 @@ informative:
       title: "FourQ: four-dimensional decompositions on a Q-curve over the Mersenne prime"
       date: 2016
       author:
-         -
-              ins: C. Costello
-         -
-              ins: P. Longa
+         -  ins: C. Costello
+         -  ins: P. Longa
+         
+    Qcurve:
+      target: "http://eprint.iacr.org/2014/727.pdf"
+      title: "The Q-curve Construction for Endomorphism-Accelerated Elliptic Curves"
+      date: 2016
+      author:
+         -  ins: B. Smith
+         
+    4GLV:
+      target: "http://eprint.iacr.org/2013/311.pdf"
+      title: "Four-dimensional GLV via the Weil restriction"
+      date: 2013
+      author:
+         -  ins: A. Guillevic
+         -  ins: S. Ionica
 
     Qcurve:
       target: "http://eprint.iacr.org/2014/727.pdf"
@@ -64,102 +77,78 @@ informative:
        title: "Parallel Collision Search with Cryptanalytic Applications"
        date: 1996
        author:
-          -
-             ins: P.C. van Oorschot
-          -
-             ins: M.J. Wiener
+          -  ins: P.C. van Oorschot
+          -  ins: M.J. Wiener
 
     Exceptional:
        target: "https://www.iacr.org/archive/pkc2003/25670224/25670224.pdf"
        title: "Exceptional procedure attack on elliptic curve cryptosystems"
        date: 2003
        author:
-          -
-              ins: T. Izu
-          -
-              ins: T. Takagi
+          -  ins: T. Izu
+          -  ins: T. Takagi
 
     Invsqr:
         target: "http://eprint.iacr.org/2012/309.pdf"
         title: "Fast and compact elliptic-curve cryptography"
         date: 2012
         author:
-           -
-              ins: M. Hamburg
+           -  ins: M. Hamburg
 
     FourQlib:
       target: "https://www.microsoft.com/en-us/research/project/fourqlib/"
       title: "FourQlib"
       date: 2016
       author:
-         -
-              ins: C. Costello
-         -
-              ins: P. Longa
+         -  ins: C. Costello
+         -  ins: P. Longa
 
     GLV:
        target: "https://www.iacr.org/archive/crypto2001/21390189.pdf"
        title: "Faster Point Multiplication on Elliptic Curves with Efficient Endomorphisms"
        date: 2001
        author:
-          -
-             ins: R. P. Gallant
-          -
-             ins: R. J. Lambert
-          -
-             ins: S. A. Vanstone
+          -  ins: R. P. Gallant
+          -  ins: R. J. Lambert
+          -  ins: S. A. Vanstone
 
     GLS:
         target: "https://www.iacr.org/archive/eurocrypt2009/54790519/54790519.pdf"
         title: "Endomorphisms for Faster Elliptic Curve Cryptography on a Large Class of Curves"
         date: 2009
         author:
-           -
-             ins: S. D. Galbraith
-           -
-             ins: X. Lin
-           -
-             ins: M. Scott
+           -  ins: S. D. Galbraith
+           -  ins: X. Lin
+           -  ins: M. Scott
 
     SchnorrQ:
        target: "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/SchnorrQ.pdf"
        title: "SchnorrQ: Schnorr Signatures on FourQ"
        date: 2016
        author:
-          -
-             ins: C. Costello
-          -
-             ins: P. Longa
+          -  ins: C. Costello
+          -  ins: P. Longa
 
     TwistedRevisited:
        target: "http://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf"
        title: "Twisted Edwards Curves Revisited"
        date: 2008
        author:
-          -
-              ins: H. Hisil
-          -
-              ins: K-H. Wong
-          -
-              ins: G. Carter
-          -
-              ins: E. Dawson
+          -  ins: H. Hisil
+          -  ins: K-H. Wong
+          -  ins: G. Carter
+          -  ins: E. Dawson
 
     Twisted:
        target: "http://eprint.iacr.org/2008/013.pdf"
        title: "Twisted Edwards Curves"
        date: 2008
        author:
-          -
-              ins: D. J. Bernstein
-          -
-              ins: P. Birkner
-          -
-              ins: M. Joye
-          -
-              ins: T. Lange
-          -
-              ins: C. Peters
+          -  ins: D. J. Bernstein
+          -  ins: P. Birkner
+          -  ins: M. Joye
+          -  ins: T. Lange
+          -  ins: C. Peters
 
 --- abstract
 
@@ -196,13 +185,14 @@ signature schemes.  However, the combined availability of these features
 severely restricts the curves that can be used for cryptographic applications.
 
 As described in {{Curve4Q}}, the elliptic curve "Curve4Q" defined in this
-document is the only known elliptic curve that (1) permits a four dimensional
-decomposition (using two endomorphisms) over GF(p^2) and (2) has a large prime
-order subgroup.  The order of this subgroup is approximately 2^246, which
-provides around 128 bits of security. No other known elliptic curve with such a
-decomposition has a larger prime order subgroup over this field.  This
-"uniqueness" allays concerns about selecting curves vulnerable to undisclosed
-attacks.
+document is a special instance of the recent endomorphism-based constructions
+from {{Qcurve}} and {{4GLV}}, and is the only known elliptic curve that
+(1) permits a four dimensional decomposition (using two endomorphisms) over
+GF(p^2) and (2) has a large prime order subgroup.  The order of this subgroup
+is approximately 2^246, which provides around 128 bits of security. No other
+known elliptic curve with such a decomposition has a larger prime order subgroup
+over this field.  This "uniqueness" allays concerns about selecting curves
+vulnerable to undisclosed attacks.
 
 Curve4Q can be used to implement Diffie-Hellman key exchange, as described
 below.  It is also possible to use Curve4Q as the basis for digital signature
@@ -704,8 +694,8 @@ fixed-point DH computation.
 
 Two users, Alice and Bob, can carry out the following steps to derive a shared
 key: each picks a random string of 32 bytes, mA and mB, respectively. Alice
-computes the public key A = Compress(DH(mA, G)), and Bob computes the public key
-B = Compress(DH(mB, G)). They exchange A and B, and then Alice computes KAB =
+computes the public key A = Compress([mA]\*G), and Bob computes the public key
+B = Compress([mB]\*G). They exchange A and B, and then Alice computes KAB =
 DH(mA, Expand(B)) while Bob computes KBA = DH(mB, Expand(A)), which produces the
 shared point K = KAB = KBA. The y coordinate of K, represented as a 32 byte
 string as detailed in {{representation-of-curve-points}} is the shared
@@ -720,7 +710,7 @@ Implementations MAY use any method to carry out these calculations, provided
 that it agrees with the above function on all inputs and failure cases, and does
 not leak information about secret keys. For example, refer to the constant-time
 fixed-base scalar multiplication algorithm implemented in {{FourQlib}} to
-accelerate the computation of DH(m, G).
+accelerate the computation of multiplications by the generator G.
 
 # IANA Considerations
 
@@ -843,7 +833,7 @@ Sign(x0 + x1*i):
 
 Compress(X, Y):
     B = Y encoded following {{representation-of-curve-points}}
-    Set the to bit to Sign(X)
+    Set the top bit to Sign(X)
     return B
 
 Expand(B = [y, s]):
@@ -867,7 +857,7 @@ Expand(B = [y, s]):
     b = (a * t2) * t
     x0 = b/2
     x1 = (a * t2) * t1
-    if t2 * b^2 = t:
+    if t2 * b^2 != t:
         Swap x0 and x1
 
     x = x0 + x1 * i
