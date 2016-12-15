@@ -197,7 +197,7 @@ severely restricts the curves that can be used for cryptographic applications.
 
 As described in {{Curve4Q}}, the elliptic curve "Curve4Q" defined in this
 document is a special instance of the recent endomorphism-based constructions
-from {{Qcurve}} and {{4GLV}}, and is the only known elliptic curve that
+from {{Qcurve}} and {{GLV4}}, and is the only known elliptic curve that
 (1) permits a four dimensional decomposition (using two endomorphisms) over
 GF(p^2) and (2) has a large prime order subgroup.  The order of this subgroup
 is approximately 2^246, which provides around 128 bits of security.  No other
@@ -868,7 +868,7 @@ Expand(B = [y, s]):
     b = (a * t2) * t
     x0 = b/2
     x1 = (a * t2) * t1
-    if t2 * b^2 = t:
+    if t2 * b^2 != t:
         Swap x0 and x1
 
     x = x0 + x1 * i
