@@ -678,14 +678,15 @@ DH(m, P):
       Compute [m]*Q
 
       If Q is the neutral point, return FAILURE
-Return [m]*Q in affine coordinates
+Return [m]\*Q in affine coordinates
 ~~~~
 
-The role of the separate multiplication by 392 is to ensure that Q is an
-N-torsion point so that the scalar multiplication algorithms above may be used
-safely to produce correct results.  In other words, as the cofactor is greater
-than one, Diffie-Hellman computations using Curve4Q MUST always use cofactor
-clearing (as defined above).
+The role of the multiplication by 392 is to ensure that Q is an N-torsion point
+so that the scalar multiplication [m]\*P in the DH function above may be used
+safely to produce correct results. In other words, as the cofactor is greater
+than one, Diffie-Hellman computations using Curve4Q MUST always clear the cofactor
+(i.e., multiply by 392, as explained above).
+
 
 The base point G for Diffie-Hellman operations has the following affine
 coordinates:
