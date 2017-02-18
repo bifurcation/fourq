@@ -713,6 +713,10 @@ shared point K = KAB = KBA. The y coordinate of K, represented as a 32 byte
 string as detailed in {{representation-of-curve-points}} is the shared
 secret.
 
+Before decompressing A and B using the function Expand(), each user SHOULD verify
+that the 128th bit of the received public key is zero (i.e., the non-imaginary
+part of the corresponding y-coordinate should be < 2^127).
+
 If the received strings are not valid points, the DH function has failed to
 compute an answer. Implementations SHOULD return a random 32 byte string as well
 as return an error, to prevent bugs when applications ignore return codes. They
