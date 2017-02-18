@@ -5,10 +5,10 @@
 Network Working Group                                            W. Ladd
 Internet-Draft                                               UC Berkeley
 Intended status: Standards Track                                P. Longa
-Expires: July 17, 2017                                Microsoft Research
+Expires: August 22, 2017                              Microsoft Research
                                                                R. Barnes
                                                                  Mozilla
-                                                        January 13, 2017
+                                                       February 18, 2017
 
 
                                 Curve4Q
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on July 17, 2017.
+   This Internet-Draft will expire on August 22, 2017.
 
 Copyright Notice
 
@@ -53,9 +53,9 @@ Copyright Notice
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 1]
+Ladd, et al.             Expires August 22, 2017                [Page 1]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    carefully, as they describe your rights and restrictions with respect
@@ -109,9 +109,9 @@ Table of Contents
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 2]
+Ladd, et al.             Expires August 22, 2017                [Page 2]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    exchange and digital signature schemes.  However, the combined
@@ -165,9 +165,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 3]
+Ladd, et al.             Expires August 22, 2017                [Page 3]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
@@ -221,9 +221,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 4]
+Ladd, et al.             Expires August 22, 2017                [Page 4]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    An element x0 + x1*i of GF(p^2) is represented on the wire by the
@@ -277,9 +277,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 5]
+Ladd, et al.             Expires August 22, 2017                [Page 5]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
 4.  Scalar multiplication
@@ -333,9 +333,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 6]
+Ladd, et al.             Expires August 22, 2017                [Page 6]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    computations: the conversion of the first argument to ADD can be done
@@ -389,9 +389,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 7]
+Ladd, et al.             Expires August 22, 2017                [Page 7]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
 4.2.  Multiplication without Endomorphisms
@@ -445,9 +445,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 8]
+Ladd, et al.             Expires August 22, 2017                [Page 8]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
 4.3.  Multiplication with Endomorphisms
@@ -501,9 +501,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                 [Page 9]
+Ladd, et al.             Expires August 22, 2017                [Page 9]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    tau_dual(X1, Y1, Z1):
@@ -557,9 +557,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                [Page 10]
+Ladd, et al.             Expires August 22, 2017               [Page 10]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
 4.3.2.  Scalar Decomposition and Recoding
@@ -613,9 +613,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                [Page 11]
+Ladd, et al.             Expires August 22, 2017               [Page 11]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
 4.3.3.  Final Computation
@@ -669,9 +669,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                [Page 12]
+Ladd, et al.             Expires August 22, 2017               [Page 12]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    i.e., the execution of branches and memory accesses MUST NOT depend
@@ -725,9 +725,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                [Page 13]
+Ladd, et al.             Expires August 22, 2017               [Page 13]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    Two users, Alice and Bob, can carry out the following steps to derive
@@ -738,6 +738,11 @@ Internet-Draft                   Curve4Q                    January 2017
    computes KBA = DH(mB, Expand(A)), which produces the shared point K =
    KAB = KBA.  The y coordinate of K, represented as a 32 byte string as
    detailed in Section 3 is the shared secret.
+
+   Before decompressing A and B using the function Expand(), each user
+   SHOULD verify that the 128th bit of the received public key is zero
+   (i.e., the non-imaginary part of the corresponding y-coordinate
+   should be < 2^127).
 
    If the received strings are not valid points, the DH function has
    failed to compute an answer.  Implementations SHOULD return a random
@@ -773,19 +778,19 @@ Internet-Draft                   Curve4Q                    January 2017
    using single coordinate ladders MUST validate points before operating
    on them.  In the case of protocols that require contributory
    behavior, when the identity is the output of the DH primitive it MUST
+
+
+
+Ladd, et al.             Expires August 22, 2017               [Page 14]
+
+Internet-Draft                   Curve4Q                   February 2017
+
+
    be rejected and failure signaled to higher levels.  Notoriously
    [RFC5246] without [RFC7627] is such a protocol.
 
    Implementations MUST ensure that execution of branches and memory
    addresses accessed do not depend on secret data.  The time
-
-
-
-Ladd, et al.              Expires July 17, 2017                [Page 14]
-
-Internet-Draft                   Curve4Q                    January 2017
-
-
    variability introduced by secret-dependent operations have been
    exploited in the past via timing and cache attacks to break
    implementations.  Side-channel analysis is a constantly moving field,
@@ -830,17 +835,17 @@ Internet-Draft                   Curve4Q                    January 2017
               Curves", 2009, <https://www.iacr.org/archive/
               eurocrypt2009/54790519/54790519.pdf>.
 
+
+
+Ladd, et al.             Expires August 22, 2017               [Page 15]
+
+Internet-Draft                   Curve4Q                   February 2017
+
+
    [GLV]      Gallant, R., Lambert, R., and S. Vanstone, "Faster Point
               Multiplication on Elliptic Curves with Efficient
               Endomorphisms", 2001, <https://www.iacr.org/archive/
               crypto2001/21390189.pdf>.
-
-
-
-Ladd, et al.              Expires July 17, 2017                [Page 15]
-
-Internet-Draft                   Curve4Q                    January 2017
-
 
    [GLV4]     Guillevic, A. and S. Ionica, "Four-dimensional GLV via the
               Weil restriction", 2013,
@@ -881,22 +886,23 @@ Internet-Draft                   Curve4Q                    January 2017
 
 Appendix A.  Constants
 
+
+
+
+
+
+
+
+Ladd, et al.             Expires August 22, 2017               [Page 16]
+
+Internet-Draft                   Curve4Q                   February 2017
+
+
    ctau = 0x1964de2c3afad20c74dcd57cebce74c3 +
           0x000000000000000c0000000000000012 * i
 
    ctaudual = 0x4aa740eb230586529ecaa6d9decdf034 +
               0x7ffffffffffffff40000000000000011 * i
-
-
-
-
-
-
-
-Ladd, et al.              Expires July 17, 2017                [Page 16]
-
-Internet-Draft                   Curve4Q                    January 2017
-
 
    cphi0 = 0x0000000000000005fffffffffffffff7 +
            0x2553a0759182c3294f65536cef66f81a * i
@@ -933,6 +939,21 @@ Internet-Draft                   Curve4Q                    January 2017
    L3 = 0x0d038bf8d0bffbaf6c42bd6c965dca9029b291a33678c203c
    L4 = 0x31b073877a22d841081cbdc3714983d8212e5666b77e7fdc0
 
+
+
+
+
+
+
+
+
+
+
+Ladd, et al.             Expires August 22, 2017               [Page 17]
+
+Internet-Draft                   Curve4Q                   February 2017
+
+
    b1 = [ 0x0906ff27e0a0a196, -0x1363e862c22a2da0,
           0x07426031ecc8030f, -0x084f739986b9e651]
    b2 = [ 0x1d495bea84fcc2d4, -0x0000000000000001,
@@ -941,18 +962,6 @@ Internet-Draft                   Curve4Q                    January 2017
          -0x2e4d21c98927c49f,  0x0a9e6f44c02ecd97]
    b4 = [ 0x136e340a9108c83f,  0x3122df2dc3e0ff32,
          -0x068a49f02aa8a9b5, -0x18d5087896de0aea]
-
-
-
-
-
-
-
-
-Ladd, et al.              Expires July 17, 2017                [Page 17]
-
-Internet-Draft                   Curve4Q                    January 2017
-
 
 Appendix B.  Point Decompression
 
@@ -996,18 +1005,9 @@ Appendix B.  Point Decompression
 
 
 
-
-
-
-
-
-
-
-
-
-Ladd, et al.              Expires July 17, 2017                [Page 18]
+Ladd, et al.             Expires August 22, 2017               [Page 18]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
    Sign(x0 + x1*i):
@@ -1061,9 +1061,9 @@ Internet-Draft                   Curve4Q                    January 2017
 
 
 
-Ladd, et al.              Expires July 17, 2017                [Page 19]
+Ladd, et al.             Expires August 22, 2017               [Page 19]
 
-Internet-Draft                   Curve4Q                    January 2017
+Internet-Draft                   Curve4Q                   February 2017
 
 
 Authors' Addresses
@@ -1117,4 +1117,4 @@ Authors' Addresses
 
 
 
-Ladd, et al.              Expires July 17, 2017                [Page 20]
+Ladd, et al.             Expires August 22, 2017               [Page 20]

@@ -301,7 +301,7 @@ address {
 
   <meta name="dct.creator" content="Ladd, W., Longa, P., and R. Barnes" />
   <meta name="dct.identifier" content="urn:ietf:id:draft-barnes-cfrg-4q-latest" />
-  <meta name="dct.issued" scheme="ISO8601" content="2017-1-13" />
+  <meta name="dct.issued" scheme="ISO8601" content="2017-2-18" />
   <meta name="dct.abstract" content="This document specifies Curve4Q, a twisted Edwards curve proposed in " />
   <meta name="description" content="This document specifies Curve4Q, a twisted Edwards curve proposed in " />
 
@@ -325,7 +325,7 @@ address {
   <td class="right">P. Longa</td>
 </tr>
 <tr>
-  <td class="left">Expires: July 17, 2017</td>
+  <td class="left">Expires: August 22, 2017</td>
   <td class="right">Microsoft Research</td>
 </tr>
 <tr>
@@ -338,7 +338,7 @@ address {
 </tr>
 <tr>
   <td class="left"></td>
-  <td class="right">January 13, 2017</td>
+  <td class="right">February 18, 2017</td>
 </tr>
 
     	
@@ -358,7 +358,7 @@ address {
 <p>This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.</p>
 <p>Internet-Drafts are working documents of the Internet Engineering Task Force (IETF).  Note that other groups may also distribute working documents as Internet-Drafts.  The list of current Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
 <p>Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."</p>
-<p>This Internet-Draft will expire on July 17, 2017.</p>
+<p>This Internet-Draft will expire on August 22, 2017.</p>
 <h1 id="rfc.copyrightnotice">
   <a href="#rfc.copyrightnotice">Copyright Notice</a>
 </h1>
@@ -694,8 +694,9 @@ G = (X, Y)
 </pre>
 <p id="rfc.section.5.p.4">The tables used in multiplications of this generator (small multiples of G for the multiplication without endomorphisms, or endomorphism images for the optimized multiplication with endomorphisms) can be pre-generated to speed up the first, fixed-point DH computation.</p>
 <p id="rfc.section.5.p.5">Two users, Alice and Bob, can carry out the following steps to derive a shared key: each picks a random string of 32 bytes, mA and mB, respectively. Alice computes the public key A = Compress([mA]*G), and Bob computes the public key B = Compress([mB]*G). They exchange A and B, and then Alice computes KAB = DH(mA, Expand(B)) while Bob computes KBA = DH(mB, Expand(A)), which produces the shared point K = KAB = KBA. The y coordinate of K, represented as a 32 byte string as detailed in <a href="#representation-of-curve-points">Section 3</a> is the shared secret.</p>
-<p id="rfc.section.5.p.6">If the received strings are not valid points, the DH function has failed to compute an answer. Implementations SHOULD return a random 32 byte string as well as return an error, to prevent bugs when applications ignore return codes. They MUST signal an error when decompression fails.</p>
-<p id="rfc.section.5.p.7">Implementations MAY use any method to carry out these calculations, provided that it agrees with the above function on all inputs and failure cases, and does not leak information about secret keys. For example, refer to the constant-time fixed-base scalar multiplication algorithm implemented in <a href="#FourQlib">[FourQlib]</a> to accelerate the computation of multiplications by the generator G.</p>
+<p id="rfc.section.5.p.6">Before decompressing A and B using the function Expand(), each user SHOULD verify that the 128th bit of the received public key is zero (i.e., the non-imaginary part of the corresponding y-coordinate should be &lt; 2^127).</p>
+<p id="rfc.section.5.p.7">If the received strings are not valid points, the DH function has failed to compute an answer. Implementations SHOULD return a random 32 byte string as well as return an error, to prevent bugs when applications ignore return codes. They MUST signal an error when decompression fails.</p>
+<p id="rfc.section.5.p.8">Implementations MAY use any method to carry out these calculations, provided that it agrees with the above function on all inputs and failure cases, and does not leak information about secret keys. For example, refer to the constant-time fixed-base scalar multiplication algorithm implemented in <a href="#FourQlib">[FourQlib]</a> to accelerate the computation of multiplications by the generator G.</p>
 <h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> <a href="#iana-considerations" id="iana-considerations">IANA Considerations</a></h1>
 <p id="rfc.section.6.p.1">[RFC Editor: please remove this section prior to publication] This document has no IANA actions.</p>
 <h1 id="rfc.section.7"><a href="#rfc.section.7">7.</a> <a href="#security-considerations" id="security-considerations">Security Considerations</a></h1>
