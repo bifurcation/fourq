@@ -5,14 +5,14 @@
 Network Working Group                                            W. Ladd
 Internet-Draft                                               UC Berkeley
 Intended status: Standards Track                                P. Longa
-Expires: August 22, 2017                              Microsoft Research
+Expires: September 28, 2017                           Microsoft Research
                                                                R. Barnes
                                                                  Mozilla
-                                                       February 18, 2017
+                                                          March 27, 2017
 
 
                                 Curve4Q
-                      draft-barnes-cfrg-4q-latest
+                       draft-ladd-cfrg-4q-latest
 
 Abstract
 
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on August 22, 2017.
+   This Internet-Draft will expire on September 28, 2017.
 
 Copyright Notice
 
@@ -53,9 +53,9 @@ Copyright Notice
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 1]
+Ladd, et al.           Expires September 28, 2017               [Page 1]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    carefully, as they describe your rights and restrictions with respect
@@ -109,9 +109,9 @@ Table of Contents
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 2]
+Ladd, et al.           Expires September 28, 2017               [Page 2]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    exchange and digital signature schemes.  However, the combined
@@ -165,9 +165,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 3]
+Ladd, et al.           Expires September 28, 2017               [Page 3]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    Curve4Q is the twisted Edwards curve E over GF(p^2) defined by the
@@ -221,9 +221,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 4]
+Ladd, et al.           Expires September 28, 2017               [Page 4]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    An element x0 + x1*i of GF(p^2) is represented on the wire by the
@@ -277,9 +277,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 5]
+Ladd, et al.           Expires September 28, 2017               [Page 5]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
 4.  Scalar multiplication
@@ -333,9 +333,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 6]
+Ladd, et al.           Expires September 28, 2017               [Page 6]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    computations: the conversion of the first argument to ADD can be done
@@ -389,9 +389,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 7]
+Ladd, et al.           Expires September 28, 2017               [Page 7]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
 4.2.  Multiplication without Endomorphisms
@@ -445,9 +445,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 8]
+Ladd, et al.           Expires September 28, 2017               [Page 8]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
 4.3.  Multiplication with Endomorphisms
@@ -501,9 +501,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017                [Page 9]
+Ladd, et al.           Expires September 28, 2017               [Page 9]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    tau_dual(X1, Y1, Z1):
@@ -557,9 +557,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 10]
+Ladd, et al.           Expires September 28, 2017              [Page 10]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
 4.3.2.  Scalar Decomposition and Recoding
@@ -613,9 +613,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 11]
+Ladd, et al.           Expires September 28, 2017              [Page 11]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
 4.3.3.  Final Computation
@@ -669,9 +669,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 12]
+Ladd, et al.           Expires September 28, 2017              [Page 12]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    i.e., the execution of branches and memory accesses MUST NOT depend
@@ -725,9 +725,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 13]
+Ladd, et al.           Expires September 28, 2017              [Page 13]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    Two users, Alice and Bob, can carry out the following steps to derive
@@ -781,9 +781,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 14]
+Ladd, et al.           Expires September 28, 2017              [Page 14]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    be rejected and failure signaled to higher levels.  Notoriously
@@ -837,9 +837,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 15]
+Ladd, et al.           Expires September 28, 2017              [Page 15]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    [GLV]      Gallant, R., Lambert, R., and S. Vanstone, "Faster Point
@@ -893,9 +893,9 @@ Appendix A.  Constants
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 16]
+Ladd, et al.           Expires September 28, 2017              [Page 16]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    ctau = 0x1964de2c3afad20c74dcd57cebce74c3 +
@@ -949,9 +949,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 17]
+Ladd, et al.           Expires September 28, 2017              [Page 17]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    b1 = [ 0x0906ff27e0a0a196, -0x1363e862c22a2da0,
@@ -1005,9 +1005,9 @@ Appendix B.  Point Decompression
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 18]
+Ladd, et al.           Expires September 28, 2017              [Page 18]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
    Sign(x0 + x1*i):
@@ -1061,9 +1061,9 @@ Internet-Draft                   Curve4Q                   February 2017
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 19]
+Ladd, et al.           Expires September 28, 2017              [Page 19]
 
-Internet-Draft                   Curve4Q                   February 2017
+Internet-Draft                   Curve4Q                      March 2017
 
 
 Authors' Addresses
@@ -1117,4 +1117,4 @@ Authors' Addresses
 
 
 
-Ladd, et al.             Expires August 22, 2017               [Page 20]
+Ladd, et al.           Expires September 28, 2017              [Page 20]
