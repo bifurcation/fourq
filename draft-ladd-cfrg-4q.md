@@ -1,7 +1,7 @@
 ---
 title: Curve4Q
 abbrev:
-docname: draft-barnes-cfrg-4q-latest
+docname: draft-ladd-cfrg-4q-latest
 category: std
 
 ipr: trust200902
